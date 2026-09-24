@@ -423,14 +423,6 @@ function renderMainPortal(){
           </div>
         </div>
       </div>
-
-      <div class="portal-footer-notice">
-        <div class="pfn-left">
-          <span class="rec-dot"></span>
-          <span>ROUTING ARCHITECTURE: Sub-portfolio ini didedikasikan untuk rekayasa perangkat keras; seluruh karya perangkat lunak berpusat di <strong>aefera.me</strong>.</span>
-        </div>
-        <a href="${portal.url}" target="_blank" rel="noopener" class="pfn-link">${portal.url} &nearr;</a>
-      </div>
     </div>
   `;
 }
