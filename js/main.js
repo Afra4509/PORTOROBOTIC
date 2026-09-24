@@ -54,7 +54,11 @@ function renderFixedFields(){
   setText('topIdTag', p.name.toUpperCase());
   setText('topYear', p.year);
   setText('loaderName', p.name.toUpperCase());
-  setText('heroName', p.name.toUpperCase());
+  const hn = $('heroName');
+  if(hn){
+    const words = (p.name || "AFRA FADHMA DINATA").toUpperCase().split(' ');
+    hn.innerHTML = words.map(w => `<span class="hn-line">${w}</span>`).join('');
+  }
   setText('heroField', p.field);
   setText('heroRole', p.role);
   setText('metaLocation', p.location.toUpperCase());
@@ -656,27 +660,92 @@ const SECTIONS = [
 ];
 
 function renderSideNav(){
-  $('sideNav').innerHTML = SECTIONS.map((s,i) => `
-    <a href="#${s.id}" data-id="${s.id}">
-      <span class="nav-label">${pad2(i)} — ${s.label}</span>
-      <span class="nav-dot"></span>
-    </a>`).join('');
+  const sn = $('sideNav');
+  if(sn){
+    sn.innerHTML = SECTIONS.map((s,i) => `
+      <a href="#${s.id}" data-id="${s.id}" aria-label="Navigate to ${s.label}">
+        <span class="nav-label">${pad2(i)} — ${s.label}</span>
+        <span class="nav-dot"></span>
+      </a>`).join('');
+  }
+
+  // Populate Mobile Navigation Drawer
+  const mList = $('mobileNavList');
+  if(mList){
+    mList.innerHTML = SECTIONS.map((s, i) => `
+      <li>
+        <a href="#${s.id}" class="mnd-link" data-id="${s.id}">
+          <span class="mnd-num">${pad2(i)}</span>
+          <span class="mnd-label">${s.label}</span>
+          <span class="mnd-indicator"></span>
+        </a>
+      </li>
+    `).join('');
+  }
+
+  // Mobile Drawer Toggle logic
+  const toggleBtn = $('mobileNavToggle');
+  const closeBtn = $('mobileNavClose');
+  const drawer = $('mobileNavDrawer');
+  
+  function openMobileNav(){
+    if(drawer) {
+      drawer.classList.add('open');
+      drawer.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+  }
+  function closeMobileNav(){
+    if(drawer) {
+      drawer.classList.remove('open');
+      drawer.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+  }
+
+  if(toggleBtn) toggleBtn.addEventListener('click', openMobileNav);
+  if(closeBtn) closeBtn.addEventListener('click', closeMobileNav);
+
+  if(mList){
+    mList.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', closeMobileNav);
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape') closeMobileNav();
+  });
 }
 
 function initSectionObserver(){
   const navLinks = document.querySelectorAll('.side-nav a');
+  const mndLinks = document.querySelectorAll('.mnd-link');
   const counter = $('frameCounter');
+  const mHudLabel = $('mobileHudLabel');
+  const mHudCounter = $('mobileHudCounter');
+
   const obs = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if(entry.isIntersecting){
         const idx = SECTIONS.findIndex(s => s.id === entry.target.id);
-        navLinks.forEach(l => l.classList.remove('active'));
-        const link = document.querySelector(`.side-nav a[data-id="${entry.target.id}"]`);
-        if(link) link.classList.add('active');
-        if(counter && idx >= 0) counter.textContent = pad2(idx);
+        if(idx >= 0){
+          const sec = SECTIONS[idx];
+          navLinks.forEach(l => l.classList.remove('active'));
+          mndLinks.forEach(l => l.classList.remove('active'));
+
+          const link = document.querySelector(`.side-nav a[data-id="${entry.target.id}"]`);
+          if(link) link.classList.add('active');
+
+          const mLink = document.querySelector(`.mnd-link[data-id="${entry.target.id}"]`);
+          if(mLink) mLink.classList.add('active');
+
+          if(counter) counter.textContent = pad2(idx);
+          if(mHudLabel) mHudLabel.textContent = `${pad2(idx)} // ${sec.label}`;
+          if(mHudCounter) mHudCounter.textContent = `${pad2(idx)} / 10`;
+        }
       }
     });
-  }, { threshold: 0.35 });
+  }, { threshold: 0.28 });
   SECTIONS.forEach(s => { const el = $(s.id); if(el) obs.observe(el); });
 }
 
@@ -819,6 +888,163 @@ function initLoader(){
 }
 
 /* --------------------------------------------------------------------------
+   ROBOTICS WORKSHOP ATMOSPHERE & INDUSTRIAL EMBER ENGINE
+   Subtle welding sparks, heat haze, rising embers, and atmospheric dust
+   -------------------------------------------------------------------------- */
+function initWorkshopAtmosphere(reduceMotion){
+  const canvas = $('workshopAtmosphere');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if(!ctx) return;
+
+  let width, height;
+  let animId = null;
+  let isRunning = true;
+
+  function resize(){
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize, { passive: true });
+
+  if(reduceMotion){
+    const grad = ctx.createRadialGradient(width * 0.75, height * 0.35, 10, width * 0.75, height * 0.35, width * 0.6);
+    grad.addColorStop(0, 'rgba(255, 90, 31, 0.04)');
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+    return;
+  }
+
+  const isMobile = window.innerWidth < 768;
+  const emberCount = isMobile ? 16 : 28;
+  const dustCount = isMobile ? 10 : 20;
+
+  const emberColors = [
+    '255, 90, 31',   // Signal Orange
+    '255, 133, 51',  // Hot Ember
+    '217, 119, 54',  // Molten Copper
+    '255, 205, 120'  // Electric Arc Spark
+  ];
+
+  class Ember {
+    constructor(){ this.reset(true); }
+    reset(initial = false){
+      this.x = Math.random() * width;
+      this.y = initial ? Math.random() * height : height + 10 + Math.random() * 20;
+      this.size = 1 + Math.random() * 1.6;
+      this.vx = (Math.random() - 0.5) * 0.45;
+      this.vy = -(0.55 + Math.random() * 1.15);
+      this.color = emberColors[Math.floor(Math.random() * emberColors.length)];
+      this.alpha = 0;
+      this.maxAlpha = 0.28 + Math.random() * 0.45;
+      this.life = 0;
+      this.maxLife = 160 + Math.random() * 220;
+      this.wobbleSpeed = 0.02 + Math.random() * 0.035;
+      this.wobbleAmp = 0.35 + Math.random() * 0.75;
+    }
+    update(){
+      this.life++;
+      this.x += this.vx + Math.sin(this.life * this.wobbleSpeed) * this.wobbleAmp;
+      this.y += this.vy;
+
+      if(this.life < 35){
+        this.alpha = (this.life / 35) * this.maxAlpha;
+      } else if(this.life > this.maxLife - 45){
+        this.alpha = ((this.maxLife - this.life) / 45) * this.maxAlpha;
+      } else {
+        this.alpha = this.maxAlpha;
+      }
+
+      if(this.y < -20 || this.life >= this.maxLife || this.x < -20 || this.x > width + 20){
+        this.reset();
+      }
+    }
+    draw(ctx){
+      if(this.alpha <= 0.01) return;
+      ctx.save();
+      const trailX = this.x - this.vx * 3.2;
+      const trailY = this.y - this.vy * 3.2;
+      ctx.beginPath();
+      ctx.moveTo(trailX, trailY);
+      ctx.lineTo(this.x, this.y);
+      ctx.strokeStyle = `rgba(${this.color}, ${this.alpha * 0.55})`;
+      ctx.lineWidth = this.size * 0.7;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${this.color}, ${this.alpha})`;
+      ctx.shadowColor = `rgba(${this.color}, 0.75)`;
+      ctx.shadowBlur = 6;
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  class Dust {
+    constructor(){ this.reset(true); }
+    reset(initial = false){
+      this.x = Math.random() * width;
+      this.y = initial ? Math.random() * height : height + 10;
+      this.size = 0.6 + Math.random() * 1.0;
+      this.vx = (Math.random() - 0.5) * 0.22;
+      this.vy = -(0.15 + Math.random() * 0.3);
+      this.alpha = 0;
+      this.maxAlpha = 0.06 + Math.random() * 0.12;
+      this.life = 0;
+      this.maxLife = 260 + Math.random() * 260;
+    }
+    update(){
+      this.life++;
+      this.x += this.vx;
+      this.y += this.vy;
+      if(this.life < 40){
+        this.alpha = (this.life / 40) * this.maxAlpha;
+      } else if(this.life > this.maxLife - 50){
+        this.alpha = ((this.maxLife - this.life) / 50) * this.maxAlpha;
+      }
+      if(this.y < -10 || this.life >= this.maxLife){
+        this.reset();
+      }
+    }
+    draw(ctx){
+      if(this.alpha <= 0.01) return;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(236, 231, 220, ${this.alpha})`;
+      ctx.fill();
+    }
+  }
+
+  const embers = Array.from({ length: emberCount }, () => new Ember());
+  const dusts = Array.from({ length: dustCount }, () => new Dust());
+
+  function loop(){
+    if(!isRunning) return;
+    ctx.clearRect(0, 0, width, height);
+
+    dusts.forEach(d => { d.update(); d.draw(ctx); });
+    embers.forEach(e => { e.update(); e.draw(ctx); });
+
+    animId = requestAnimationFrame(loop);
+  }
+  loop();
+
+  document.addEventListener('visibilitychange', () => {
+    if(document.hidden){
+      isRunning = false;
+      if(animId) cancelAnimationFrame(animId);
+    } else {
+      isRunning = true;
+      loop();
+    }
+  });
+}
+
+/* --------------------------------------------------------------------------
    SYSTEM INITIALIZATION
    -------------------------------------------------------------------------- */
 function init(){
@@ -840,6 +1066,7 @@ function init(){
   initParallax(reduceMotion);
   initTilt(reduceMotion);
   initLightbox();
+  initWorkshopAtmosphere(reduceMotion);
   initLoader();
 }
 

@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=9" />
+  <link rel="stylesheet" href="css/style.css?v=16" />
 </head>
 <body>
 
@@ -30,14 +30,44 @@
   </div>
 
   <!-- ==================== SHARED TECHNICAL CHROME ==================== -->
+  <canvas id="workshopAtmosphere" class="workshop-canvas" aria-hidden="true"></canvas>
+  <div class="circuit-grid" aria-hidden="true"></div>
   <div class="grain" aria-hidden="true"></div>
   <div class="frame-corners" aria-hidden="true"><span class="tl"></span><span class="tr"></span><span class="bl"></span><span class="br"></span></div>
   <div class="frame-readout" aria-hidden="true"><span class="rec-dot"></span><span>REC &bull; TELEMETRY.SYS &bull; ONLINE</span></div>
   <div class="frame-counter" aria-hidden="true">SEC <b id="frameCounter">00</b> / 10</div>
   <div class="edge-rail" aria-hidden="true">ENGINEERING — ROBOTICS — TELEMETRY — HARDWARE</div>
 
-  <!-- Side Navigation Bar -->
+  <!-- Desktop Side Navigation Bar -->
   <nav class="side-nav" aria-label="Section navigation" id="sideNav"></nav>
+
+  <!-- Mobile Telemetry Navigation Bar (Persistent HUD on Mobile) -->
+  <div class="mobile-hud" id="mobileHud">
+    <div class="mhud-status">
+      <span class="hud-live-dot"></span>
+      <span class="mhud-label" id="mobileHudLabel">00 // COVER</span>
+    </div>
+    <div class="mhud-actions">
+      <span class="mhud-counter" id="mobileHudCounter">00 / 10</span>
+      <button class="mhud-btn" id="mobileNavToggle" aria-label="Toggle section index">
+        <span class="mhud-btn-bars"><span></span><span></span></span>
+        <span class="mhud-btn-text">INDEX</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile Quick-Jump Drawer -->
+  <div class="mobile-nav-drawer" id="mobileNavDrawer" aria-hidden="true">
+    <div class="mnd-header">
+      <div class="mnd-title"><span class="hud-live-dot"></span><span>TELEMETRY // INDEX</span></div>
+      <button class="mnd-close" id="mobileNavClose" aria-label="Close index">ESC &bull; CLOSE</button>
+    </div>
+    <ul class="mnd-list" id="mobileNavList"></ul>
+    <div class="mnd-footer">
+      <span>AFRA FADHMA DINATA &bull; 2026</span>
+      <span class="mnd-online">ONLINE</span>
+    </div>
+  </div>
 
   <!-- ============================== MAIN ============================== -->
   <main>
@@ -50,8 +80,8 @@
       </div>
 
       <div class="hero-main">
-        <div>
-          <h1 class="hero-name" id="heroName">AFRA FADHMA DINATA</h1>
+        <div class="hero-text">
+          <h1 class="hero-name" id="heroName"><span class="hn-line">AFRA</span><span class="hn-line">FADHMA</span><span class="hn-line">DINATA</span></h1>
           <div class="hero-sub">
             <span class="hero-field" id="heroField">ROBOTICS &amp; EMBEDDED SYSTEMS</span>
             <span class="hero-role" id="heroRole">HARDWARE &amp; FIRMWARE ENGINEER</span>
@@ -274,7 +304,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="js/data.js?v=9"></script>
-  <script src="js/main.js?v=9"></script>
+  <script src="js/data.js?v=12"></script>
+  <script src="js/main.js?v=12"></script>
 </body>
 </html>
