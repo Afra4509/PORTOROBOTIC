@@ -98,7 +98,8 @@ function renderFixedFields(){
   setText('profileStatus2', p.status);
   setText('profileLocation', p.location);
 
-  $('profileInterests').innerHTML = p.interests.map(i => `<li>${i}</li>`).join('');
+  const pi = $('profileInterests');
+  if(pi && p.interests) pi.innerHTML = p.interests.map(i => `<li>${i}</li>`).join('');
 
   setText('educationIntro', portfolioData.sectionIntros.education);
   setText('orgsIntro', portfolioData.sectionIntros.organizations);
@@ -108,17 +109,20 @@ function renderFixedFields(){
   setText('portalIntro', portfolioData.sectionIntros.portal);
   setText('achievementsIntro', portfolioData.sectionIntros.achievements);
 
-  const c = portfolioData.currentBuild;
-  $('logGrid').innerHTML = [
-    ['CURRENTLY LEARNING', c.learning],
-    ['CURRENT PROJECT', c.project],
-    ['CURRENT INTEREST', c.interest],
-    ['NEXT TARGET', c.next]
-  ].map(([label, text]) => `
-    <div class="log-cell">
-      <div class="log-head"><span class="log-dot"></span><span class="log-label">${label}</span></div>
-      <p class="log-text">${text}</p>
-    </div>`).join('');
+  const logEl = $('logGrid');
+  if(logEl && portfolioData.currentBuild){
+    const c = portfolioData.currentBuild;
+    logEl.innerHTML = [
+      ['CURRENTLY LEARNING', c.learning],
+      ['CURRENT PROJECT', c.project],
+      ['CURRENT INTEREST', c.interest],
+      ['NEXT TARGET', c.next]
+    ].map(([label, text]) => `
+      <div class="log-cell">
+        <div class="log-head"><span class="log-dot"></span><span class="log-label">${label}</span></div>
+        <p class="log-text">${text}</p>
+      </div>`).join('');
+  }
 
   const ct = portfolioData.contact;
   setText('footerCopy', `© ${p.year} ${p.name.toUpperCase()}`);
@@ -590,19 +594,48 @@ function renderSkills(){
 }
 
 /* --------------------------------------------------------------------------
-   08 — ACHIEVEMENTS
+   08 — CERTIFICATES SHOWCASE
    -------------------------------------------------------------------------- */
 function renderAchievements(){
-  const html = portfolioData.achievements.map(a => `
-    <div class="stat-tile reveal">
-      <div class="st-year">${a.year}</div>
-      <div class="st-title">${a.title}</div>
-      <div class="st-meta">
-        <div class="st-event">${a.event}</div>
-        <div class="st-result">${a.result}</div>
+  const certContainer = $('certificatesGallery') || $('achievementsGrid');
+  if(!certContainer) return;
+
+  const certs = portfolioData.certificates || [];
+  const html = certs.map((c, i) => {
+    const idx = String(i + 1).padStart(2, '0');
+    const pdfBtn = c.pdf 
+      ? `<a href="${encodeURI(c.pdf)}" target="_blank" rel="noopener" class="cert-pdf-badge" title="Buka Dokumen PDF Asli" onclick="event.stopPropagation()">PDF ↗</a>` 
+      : '';
+    return `
+      <div class="cert-card reveal" style="--rd:${(i * 0.08).toFixed(2)}s">
+        <div class="cert-frame media-frame tilt" data-zoom-src="${encodeURI(c.image)}" data-zoom-title="${c.title}">
+          <div class="cert-header">
+            <div class="cert-header-left">
+              <span class="hud-live-dot"></span>
+              <span class="cert-num">CERT // ${idx}</span>
+            </div>
+            <div class="cert-header-right">
+              ${c.badge ? `<span class="cert-tag">${c.badge}</span>` : ''}
+              ${pdfBtn}
+            </div>
+          </div>
+          <div class="cert-image-wrap aspect-${c.aspect || 'landscape'}">
+            <img src="${encodeURI(c.image)}" alt="${c.title}" loading="lazy" />
+            <div class="cert-vignette"></div>
+            <div class="cert-hover-hint">
+              <span class="cert-hint-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+                ZOOM
+              </span>
+            </div>
+          </div>
+          <span class="mf-c1"></span><span class="mf-c2"></span>
+        </div>
       </div>
-    </div>`).join('');
-  $('achievementsGrid').innerHTML = html;
+    `;
+  }).join('');
+
+  certContainer.innerHTML = html;
 }
 
 /* --------------------------------------------------------------------------
@@ -618,7 +651,7 @@ const SECTIONS = [
   { id: 'pcb', label: 'PCB PROJECTS' },
   { id: 'portal', label: 'AEFERA.ME' },
   { id: 'skills', label: 'SPEC SHEET' },
-  { id: 'achievements', label: 'TELEMETRY' },
+  { id: 'achievements', label: 'CERTIFICATES' },
   { id: 'contact', label: 'CONTACT' }
 ];
 

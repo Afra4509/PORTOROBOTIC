@@ -63,7 +63,7 @@ const portfolioData = {
     iot: "Connected microcontroller telemetry nodes, wireless repeaters, custom OS kernels, RF spectrum experiments, and sensor instrumentation.",
     pcb: "Multi-layer schematic engineering, high-frequency routing, power electronics, step-down converters, and CAN bus transceivers.",
     portal: "Navigasi menuju website utama (aefera.me) untuk mengeksplorasi portofolio rekayasa perangkat lunak (software engineering), full-stack web development, dan repositori open-source.",
-    achievements: "Engineering milestones, organizational track record, and technical field development logs."
+    achievements: ""
   },
 
   // --------------------------------------------------------------------------
@@ -398,15 +398,71 @@ const portfolioData = {
   ],
 
   // --------------------------------------------------------------------------
-  // ACHIEVEMENTS & KEY MILESTONES
+  // CERTIFICATES & CREDENTIALS SHOWCASE
   // --------------------------------------------------------------------------
-  achievements: [
-    { title: "Custom PCB R&D & Embedded Systems", year: "2026", event: "Independent Hardware Laboratory", result: "Solo Circuit Designer & Firmware Engineer" },
-    { title: "Pentas Aplikasi Teater Catur", year: "2024", event: "Pentas Akbar Teater SMAN 2 Pasuruan", result: "Ketua Divisi PDD & Dokumentasi Utama" },
-    { title: "Event Akbar Seirama & Abirama", year: "2024", event: "OSIS SMAN 2 Kota Pasuruan", result: "Sponsorship & Lead Dokumentasi Visual" },
-    { title: "Pendamping Belajar UTBK-SNBT", year: "2025–2026", event: "Time Tutorial Service (TST) — Study Buddy", result: "Peer Tutor Penalaran Umum & Kuantitatif" },
-    { title: "Program Sertifikasi Halal Gratis UMKM", year: "2025", event: "Pemberdayaan Warga — Karang Taruna", result: "Relawan Fotografer & Tim Dokumenter" },
-    { title: "Festival Al-Banjari & Hari Kemerdekaan", year: "2025", event: "Forum Anak Kecamatan Purworejo", result: "Lead Dokumentasi & Tim Operasional Lapangan" }
+  certificates: [
+    {
+      id: "cert-ksn-at",
+      title: "Medali Emas Matematika — Kejuaraan Sains Nasional Akhir Tahun (KSN-AT) 2025",
+      badge: "MEDALI EMAS // A+",
+      year: "2025",
+      image: "certifikat/preview/Piagam_KSN-AT_2025_Matematika_MjAyNi0wMS0wNyAyMDo1ODo0OQ==.jpg",
+      pdf: "certifikat/Piagam_KSN-AT_2025_Matematika_MjAyNi0wMS0wNyAyMDo1ODo0OQ==.pdf",
+      aspect: "landscape"
+    },
+    {
+      id: "cert-kesan",
+      title: "Medali Emas Matematika — Kejuaraan Sains Siswa Nasional (KESAN) 2025",
+      badge: "MEDALI EMAS // A+",
+      year: "2025",
+      image: "certifikat/preview/Piagam_KESAN_2025_Matematika_MjAyNi0wMS0wNyAyMDo1ODoxNQ==.jpg",
+      pdf: "certifikat/Piagam_KESAN_2025_Matematika_MjAyNi0wMS0wNyAyMDo1ODoxNQ==.pdf",
+      aspect: "portrait"
+    },
+    {
+      id: "cert-ara-its",
+      title: "Olimpiade IT ARA 6.0 — Departemen Teknologi Informasi & HMIT ITS",
+      badge: "HMIT // ITS",
+      year: "2025",
+      image: "certifikat/preview/WhatsApp Image 2026-09-25 at 02.33.49.jpg",
+      aspect: "landscape"
+    },
+    {
+      id: "cert-ksnp",
+      title: "Medali Emas Matematika — Kejuaraan Sains Nasional Puskanas (KSNP) 2025",
+      badge: "MEDALI EMAS // A+",
+      year: "2025",
+      image: "certifikat/preview/Piagam_KSNP_2025_Matematika_MjAyNi0wMS0wNyAyMDo1ODoyNw==.jpg",
+      pdf: "certifikat/Piagam_KSNP_2025_Matematika_MjAyNi0wMS0wNyAyMDo1ODoyNw==.pdf",
+      aspect: "portrait"
+    },
+    {
+      id: "cert-gcloud",
+      title: "Google Cloud Roadshow x Build with AI Surabaya 2025",
+      badge: "GOOGLE CLOUD // AI",
+      year: "2025",
+      image: "certifikat/preview/E-certificate Google Cloud Roadshow Surabaya 2025 - __NAME__.jpg",
+      pdf: "certifikat/E-certificate Google Cloud Roadshow Surabaya 2025 - __NAME__.pdf",
+      aspect: "landscape"
+    },
+    {
+      id: "cert-bitsmikro",
+      title: "Bitsmikro Innovative Vibecode 2025 — Universitas Mikroskil",
+      badge: "VIBECODE // CYBER",
+      year: "2025",
+      image: "certifikat/preview/BITSMIKRO INNOVATIVE VIBECODE.jpg",
+      pdf: "certifikat/BITSMIKRO INNOVATIVE VIBECODE.pdf",
+      aspect: "landscape"
+    },
+    {
+      id: "cert-schematics",
+      title: "Schematics 2024 National Logic Competition — Teknik Informatika & HMTC ITS",
+      badge: "HMTC // ITS",
+      year: "2024",
+      image: "certifikat/preview/Salinan Hello syntax - Afra fadhma dinata.jpg",
+      pdf: "certifikat/Salinan Hello syntax - Afra fadhma dinata.pdf",
+      aspect: "landscape"
+    }
   ],
 
   // --------------------------------------------------------------------------
