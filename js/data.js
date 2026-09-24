@@ -76,7 +76,7 @@ const portfolioData = {
       department: "Departemen Statistika Bisnis",
       status: "Mahasiswa Aktif",
       nrp: "2058261004",
-      year: "2024 — Sekarang",
+      year: "2026 — Sekarang",
       location: "Surabaya, Indonesia",
       focus: "Applied Logistics Analytics, Data Engineering, IoT & Embedded Systems",
       description: "Menempuh pendidikan vokasi sarjana terapan di Departemen Statistika Bisnis dengan fokus kurikulum pada analitika logistik, pemodelan data statistik, integrasi sistem informasi rantai pasok, dan komputasi cerdas.",
@@ -90,7 +90,7 @@ const portfolioData = {
       department: "Science / Mathematics Track",
       status: "Alumni",
       nrp: "-",
-      year: "2021 — 2024",
+      year: "2023 — 2026",
       location: "Pasuruan, Indonesia",
       focus: "Science, Mathematics & Computational Foundations",
       description: "Pendidikan menengah atas dengan fokus pada sains, matematika, serta keaktifan dalam organisasi kesiswaan seni, budaya, dan teater.",
@@ -147,7 +147,7 @@ const portfolioData = {
         "Menyusun pendekatan belajar terstruktur dengan membedah pola logika kuantitatif, rumus praktis, dan strategi manajemen waktu pengerjaan soal.",
         "Membangun suasana belajar yang interaktif dan suportif guna meningkatkan pemahaman konseptual serta daya analitis siswa."
       ],
-      image: null, // Monogram badge rendered in main.js
+      image: "logo organisasi/ganesha operation.png",
       hud: "STATUS: ACTIVE // 2025–2026"
     },
     {
@@ -203,8 +203,8 @@ const portfolioData = {
       description: "Rancang bangun modul mikro-kontroler ESP32 custom secara mandiri dari awal. Mengintegrasikan proteksi daya USB Type-C, konverter serial CP2102N, regulator LDO 3.3V ber-noise rendah, dan routing frekuensi tinggi yang presisi dengan silkscreen artwork Frieren beresolusi tinggi pada lapisan atas tanpa mengorbankan integritas sinyal antena RF.",
       tech: "KiCad 8, ESP32-WROOM-32E, USB Type-C, CP2102N, LDO 3.3V, 4-Layer PCB",
       role: "Solo Hardware & Firmware Engineer (Full-Cycle Rancang Bangun Mandiri)",
-      year: "2025 – 2026",
-      status: "Production Prototype // Operational"
+      year: "2026",
+      status: "Prototipe"
     },
     {
       id: "pcb-02",
@@ -220,8 +220,8 @@ const portfolioData = {
       description: "Gateway komunikasi industri yang dirancang mandiri untuk menjembatani bus kontrol industri CAN 2.0B dengan jaringan kabel Ethernet 10/100 Mbps. Dilengkapi supresi lonjakan tegangan transien (TVS diode protection), isolasi sinyal, dan jalur diferensial 120-ohm matched impedance untuk transmisi data telemetri yang tahan derau elektromagnetik.",
       tech: "KiCad, CAN 2.0B Controller, TJA1050 Transceiver, W5500 SPI Ethernet, TVS Diodes, C++",
       role: "Solo Systems & Hardware Engineer (Desain Skematik, Routing & Protokol Mandiri)",
-      year: "2025",
-      status: "Lab Tested // Telemetry Validated"
+      year: "2026",
+      status: "Prototipe"
     },
     {
       id: "pcb-03",
@@ -237,8 +237,8 @@ const portfolioData = {
       description: "Papan kontroler komputasi tersemat mandiri bertenaga ARM Cortex-M 32-bit untuk pemrosesan aktuator dan sensor real-time. Menampilkan regulator daya ganda 5V/3.3V berstabilitas tinggi, crystal oscillator presisi, antarmuka debugging SWD, serta ekspansi I/O berdensitas tinggi untuk pengendalian motorik dan telemetri serial.",
       tech: "KiCad, STM32 Microcontroller, STM32CubeIDE, SWD Debugger, Multi-Rail Power, C/C++",
       role: "Solo Embedded Hardware Engineer (Rancang Bangun STM32, Layout & Driver Mandiri)",
-      year: "2025",
-      status: "Fabricated // Core Validated"
+      year: "2026",
+      status: "Prototipe"
     },
     {
       id: "pcb-04",
@@ -254,8 +254,8 @@ const portfolioData = {
       description: "Modul catu daya DC-DC step-down teregulasi dengan efisiensi konversi tinggi untuk menyuplai beban mikroprosesor dan modul telemetri RF. Dirancang dengan perhitungan induktansi presisi, loop switching minimal untuk meredam EMI, serta bidang tembaga pembuang panas (thermal relief) yang menjaga stabilitas output tegangan di bawah beban arus kontinu.",
       tech: "KiCad, DC-DC Switching Regulator, Power Inductor, Low-ESR Capacitors, Thermal Relief",
       role: "Solo Power Electronics Designer (Perhitungan Matematis, Layout Termal & Uji Beban)",
-      year: "2024 – 2025",
-      status: "Verified (<45mV Voltage Ripple)"
+      year: "2026",
+      status: "Prototipe"
     },
     {
       id: "pcb-05",
@@ -271,8 +271,8 @@ const portfolioData = {
       description: "Papan antarmuka transmisi frekuensi radio 2.4 GHz khusus berbasis NRF24L01+. Didesain mandiri dengan konektor antena SMA eksternal, jaringan decoupling ber-ESR rendah untuk meredam noise switching, dan jalur sinyal RF berimpedansi terkontrol 50-ohm untuk riset analisis interferensi spektrum radio di lingkungan laboratorium tertutup.",
       tech: "KiCad, NRF24L01+ Transceiver, 50-Ohm Trace Routing, SMA Connector, Decoupling Network",
       role: "Solo RF Hardware Designer (Impedance Layout, Decoupling & Controlled Lab Testing)",
-      year: "2024 – 2025",
-      status: "Controlled Lab Prototype"
+      year: "2026",
+      status: "Prototipe"
     },
 
     // --- IOT & EMBEDDED PROJECTS (7) ---
@@ -290,8 +290,8 @@ const portfolioData = {
       description: "Sistem operasi mini dan antarmuka shell CLI mandiri yang berjalan di atas dual-core ESP32 dengan task scheduler FreeRTOS. Mendukung command parsing non-blocking, inspeksi telemetri memori real-time (heap/stack allocation), eksekusi modul diagnosa jaringan nirkabel, serta logging performa perangkat keras langsung melalui komunikasi serial berkecepatan tinggi.",
       tech: "ESP-IDF, FreeRTOS, C/C++, Non-Blocking UART, Dynamic Command Registry, Ring Buffers",
       role: "Solo Systems & Firmware Architect (Arsitektur Shell, Command Parser & Multitasking Mandiri)",
-      year: "2025 – 2026",
-      status: "Operational // Active Core Kernel"
+      year: "2025–2026",
+      status: "Prototipe"
     },
     {
       id: "iot-02",
@@ -307,8 +307,8 @@ const portfolioData = {
       description: "Infrastruktur telemetri awan mandiri yang bertindak sebagai broker sentral bagi kluster node sensor mikrokontroler lapangan. Mengimplementasikan protokol MQTT ber-overhead rendah dan endpoint REST/WebSocket untuk melakukan ingest data, validasi struktur payload JSON, serta streaming metriks telemetri secara real-time dengan latensi rendah.",
       tech: "Python, MQTT Broker, WebSocket, REST APIs, JSON Telemetry Pipelines, Time-Series Logging",
       role: "Solo Full-Stack IoT Engineer (Protokol Firmware, Cloud Broker & Pipeline Mandiri)",
-      year: "2025",
-      status: "Online // Production Connected"
+      year: "2025–2026",
+      status: "Prototipe"
     },
     {
       id: "iot-03",
@@ -324,8 +324,8 @@ const portfolioData = {
       description: "Platform riset keamanan nirkabel edukatif mandiri untuk menganalisis kelemahan protokol WiFi 802.11 b/g/n. Menggunakan mode promiscuous ESP32 untuk mendeteksi paket deotentikasi, memetakan kepadatan AP di sekitar, dan mendemonstrasikan skenario captive portal (evil twin) dalam lingkungan terisolasi untuk tujuan edukasi pertahanan siber dan mitigasi ancaman jaringan.",
       tech: "ESP32 Promiscuous Mode, 802.11 Frame Parsing, DNS Spoofing, Embedded Web Server, C++",
       role: "Solo Security Researcher & Developer (Packet Inspection, Captive Portal & Defense Lab Mandiri)",
-      year: "2024 – 2025",
-      status: "Research Experiment Completed"
+      year: "2025–2026",
+      status: "Prototipe"
     },
     {
       id: "iot-04",
@@ -341,8 +341,8 @@ const portfolioData = {
       description: "Pengembangan firmware dan eksperimen modulasi pembawa frekuensi radio 2.4 GHz ISM secara mandiri. Memanfaatkan modul NRF24L01+ bertenaga tinggi untuk menyapu saluran (channel hopping 0-125) dengan transmisi paket kontinu, bertujuan untuk menguji ketahanan protokol komunikasi nirkabel terhadap interferensi sinyal di ruang laboratorium terlindung.",
       tech: "NRF24L01+ PA/LNA, C++, High-Speed SPI Driver, ISM Band Analysis, Frequency Sweeping",
       role: "Solo RF Systems Developer (Algoritma Frequency Sweep & Optimasi SPI Mandiri)",
-      year: "2024",
-      status: "Lab Experiment Verified"
+      year: "2025–2026",
+      status: "Prototipe"
     },
     {
       id: "iot-05",
@@ -358,8 +358,8 @@ const portfolioData = {
       description: "Alat ukur kapasitas kapasitor digital presisi tinggi yang dibangun mandiri dari nol dengan menerapkan prinsip waktu pengisian transient sirkuit RC (tau = R x C). Memanfaatkan komparator analog internal dan interupsi timer presisi mikrodetik untuk menghitung nilai kapasitansi dari skala pikofarad hingga milifarad dengan pembacaan langsung di layar OLED.",
       tech: "Microcontroller ADC, Analog Comparator, RC Timing Circuit, Embedded C++, OLED I2C",
       role: "Solo Instrumentation Engineer (Pemodelan Matematis RC, Firmware & Kalibrasi Mandiri)",
-      year: "2024",
-      status: "Calibrated (<3% Deviation Tolerance)"
+      year: "2025–2026",
+      status: "Prototipe"
     },
     {
       id: "iot-06",
@@ -375,8 +375,8 @@ const portfolioData = {
       description: "Implementasi sistem estimasi orientasi dan kinematika gerak 6 derajat kebebasan (6-DOF) mandiri berbasis sensor MPU6050. Mengombinasikan data akselerometer dan giroskop melalui algoritma complementary filter untuk mereduksi gyro drift dan derau mekanik, menghasilkan kalkulasi sudut pitch, roll, dan yaw yang stabil dan responsif untuk navigasi robotika.",
       tech: "MPU6050 6-DOF IMU, I2C Fast-Mode, Complementary Filter, C++, Quaternion Math, Telemetry Stream",
       role: "Solo Robotics & Sensor Engineer (Driver I2C, Sensor Fusion Math & Orientasi Mandiri)",
-      year: "2024 – 2025",
-      status: "Operational in Robotics Setup"
+      year: "2025–2026",
+      status: "Prototipe"
     },
     {
       id: "iot-07",
@@ -392,8 +392,8 @@ const portfolioData = {
       description: "Solusi repeater nirkabel mandiri yang memanfaatkan kapabilitas dual-interface (Station + SoftAP) pada ESP32 untuk memperluas jangkauan sinyal WiFi tanpa kehilangan throughput signifikan. Mengonfigurasi layer LwIP untuk NAT routing dan packet forwarding transparan, memungkinkan banyak klien terhubung secara simultan dengan stabilitas transmisi tinggi.",
       tech: "ESP32 STA+AP Mode, LwIP TCP/IP Stack, IP Forwarding, C++, Web Management Console",
       role: "Solo Network & Firmware Developer (Arsitektur LwIP, NAT Routing & Relaying Mandiri)",
-      year: "2024 – 2025",
-      status: "Deployed // Active Daily Relay"
+      year: "2025–2026",
+      status: "Prototipe"
     }
   ],
 
@@ -401,7 +401,7 @@ const portfolioData = {
   // ACHIEVEMENTS & KEY MILESTONES
   // --------------------------------------------------------------------------
   achievements: [
-    { title: "Custom PCB R&D & Embedded Systems", year: "2024–2025", event: "Independent Hardware Laboratory", result: "Solo Circuit Designer & Firmware Engineer" },
+    { title: "Custom PCB R&D & Embedded Systems", year: "2026", event: "Independent Hardware Laboratory", result: "Solo Circuit Designer & Firmware Engineer" },
     { title: "Pentas Aplikasi Teater Catur", year: "2024", event: "Pentas Akbar Teater SMAN 2 Pasuruan", result: "Ketua Divisi PDD & Dokumentasi Utama" },
     { title: "Event Akbar Seirama & Abirama", year: "2024", event: "OSIS SMAN 2 Kota Pasuruan", result: "Sponsorship & Lead Dokumentasi Visual" },
     { title: "Pendamping Belajar UTBK-SNBT", year: "2025–2026", event: "Time Tutorial Service (TST) — Study Buddy", result: "Peer Tutor Penalaran Umum & Kuantitatif" },
