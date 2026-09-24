@@ -3,7 +3,7 @@
    Renders all dynamic sections from portfolioData (js/data.js):
    - Hero, Profile & Contact for Afra Fadhma Dinata (NRP: 2058261004)
    - Education Credentials (ITS & SMAN 2 Pasuruan)
-   - Organizations Motorsport Timeline
+   - Organizations & Leadership Timeline
    - Selected Projects Flagships
    - IoT & Embedded Projects Catalog
    - PCB & Electronics Projects Catalog
@@ -30,7 +30,7 @@ function urlFor(v){
   return v.startsWith('http') ? v : `https://${v}`;
 }
 
-// Builds technical media frames with motorsport HUD labels, scanner sweep, and zoom inspection trigger
+// Builds technical media frames with engineering HUD labels, scanner sweep, and zoom inspection trigger
 function mediaFrame({ image, label, tag, hudTag, extraClass, zoomTitle }){
   const src = getAssetUrl(image);
   const zoomAttr = src ? `data-zoom-src="${src}" data-zoom-title="${zoomTitle || label}"` : '';
@@ -122,17 +122,70 @@ function renderFixedFields(){
 
   const ct = portfolioData.contact;
   setText('footerCopy', `© ${p.year} ${p.name.toUpperCase()}`);
-  const rows = [
-    ['WHATSAPP', ct.whatsapp, ct.whatsappUrl],
-    ['GITHUB', 'github.com/Afra4509', ct.github],
-    ['LINKEDIN', 'Afra Fadhma Dinata', ct.linkedin],
-    ['MAIN PORTFOLIO (SOFTWARE & WEB)', 'aefera.me', ct.portfolio],
-    ['INSTAGRAM', '@afrafdhma', ct.instagram]
+  const contactRows = [
+    {
+      key: 'WHATSAPP',
+      sub: 'Direct Message & Fast Communication',
+      val: ct.whatsapp,
+      href: ct.whatsappUrl,
+      action: 'CHAT NOW',
+      color: '#25D366',
+      icon: `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm.01 1.67c2.2 0 4.26.86 5.82 2.42a8.23 8.23 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24zm4.52 11.66c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.02-1.25-.75-.67-1.26-1.5-1.4-1.75-.15-.25-.02-.39.11-.51.11-.11.25-.29.38-.44.13-.14.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.78 2.72 4.31 3.81.6.26 1.07.41 1.44.53.61.19 1.16.17 1.6.1.49-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.1-.22-.16-.47-.29z"/></svg>`
+    },
+    {
+      key: 'GITHUB',
+      sub: 'Open-Source Repositories & Engineering Labs',
+      val: 'github.com/Afra4509',
+      href: ct.github,
+      action: 'EXPLORE REPOS',
+      color: '#e6edf3',
+      icon: `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>`
+    },
+    {
+      key: 'LINKEDIN',
+      sub: 'Professional Career Network & Connections',
+      val: 'Afra Fadhma Dinata',
+      href: ct.linkedin,
+      action: 'CONNECT',
+      color: '#0a66c2',
+      icon: `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>`
+    },
+    {
+      key: 'MAIN PORTFOLIO',
+      sub: 'Software Engineering, Web Apps & Main Hub',
+      val: 'aefera.me',
+      href: ct.portfolio,
+      action: 'VISIT HUB',
+      color: '#ff5a1f',
+      icon: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`
+    },
+    {
+      key: 'INSTAGRAM',
+      sub: 'Creative Log, Event Photography & Updates',
+      val: '@afrafdhma',
+      href: ct.instagram,
+      action: 'FOLLOW',
+      color: '#E1306C',
+      icon: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>`
+    }
   ];
-  $('contactList').innerHTML = rows.map(([k,v,href]) => `
-    <a class="contact-row reveal" href="${href}" target="_blank" rel="noopener">
-      <span>${v}<span class="cr-k" style="display:block;margin-top:4px;">${k}</span></span>
-      <span class="cr-arrow">→</span>
+  $('contactList').innerHTML = contactRows.map(r => `
+    <a class="contact-card reveal" href="${r.href}" target="_blank" rel="noopener" style="--brand-color: ${r.color};">
+      <div class="cc-left">
+        <div class="cc-icon-box" aria-hidden="true">${r.icon}</div>
+        <div class="cc-info">
+          <div class="cc-val">${r.val}</div>
+          <div class="cc-meta">
+            <span class="cc-k">${r.key}</span>
+            <span class="cc-sep">&bull;</span>
+            <span class="cc-sub">${r.sub}</span>
+          </div>
+        </div>
+      </div>
+      <div class="cc-right">
+        <span class="cc-action">${r.action}</span>
+        <span class="cc-arrow">&nearr;</span>
+      </div>
     </a>`).join('');
 }
 
@@ -162,7 +215,7 @@ function renderEducation(){
 }
 
 /* --------------------------------------------------------------------------
-   03 — ORGANIZATIONS (MOTORSPORT PADDOCK TIMELINE)
+   03 — ORGANIZATIONS & LEADERSHIP TIMELINE
    -------------------------------------------------------------------------- */
 function renderOrganizations(){
   const html = portfolioData.organizations.map(org => {
@@ -383,15 +436,163 @@ function renderMainPortal(){
 }
 
 /* --------------------------------------------------------------------------
-   07 — TECHNICAL SKILLS (SPEC SHEET)
-   Renders all 7 technical domains
+   08 — TECHNICAL SKILLS (SPEC SHEET)
+   Renders balanced technical domains with authentic SVG logos
    -------------------------------------------------------------------------- */
+function getSkillSvg(name){
+  const n = (name || '').toLowerCase();
+
+  // Python
+  if(n.includes('python')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#387EB8" d="M11.9 2c-3.1 0-2.9 1.3-2.9 1.3l.01 1.4h2.9v.4H6.2S4 4.8 4 8c0 3.2 1.9 3.1 1.9 3.1h1.1v-1.6s-.1-1.9 1.9-1.9h3.3s1.8.03 1.8-1.8V4s.2-2-2.1-2zm-1.7 1.1c.3 0 .6.3.6.6s-.3.6-.6.6-.6-.3-.6-.6.3-.6.6-.6z"/><path fill="#FFE052" d="M12.1 22c3.1 0 2.9-1.3 2.9-1.3l-.01-1.4h-2.9v-.4h5.7s2.2.3 2.2-2.9c0-3.2-1.9-3.1-1.9-3.1h-1.1v1.6s.1 1.9-1.9 1.9H11.8s-1.8-.03-1.8 1.8v1.8s-.2 2 2.1 2zm1.7-1.1c-.3 0-.6-.3-.6-.6s.3-.6.6-.6.6.3.6.6-.3.6-.6.6z"/></svg>`;
+  }
+  // C++
+  if(n.includes('c++')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#00599C" d="M12 2l9 5.2v10.4L12 23l-9-5.4V7.2L12 2z"/><path fill="#fff" d="M9.8 14.8c-.8 0-1.5-.3-2-.8-.5-.5-.8-1.2-.8-2s.3-1.5.8-2c.5-.5 1.2-.8 2-.8.6 0 1.2.2 1.6.6l-.6.7c-.3-.3-.7-.5-1-.5-.5 0-.9.2-1.2.5-.3.4-.5.8-.5 1.5 0 .6.2 1.1.5 1.5.3.3.7.5 1.2.5.4 0 .8-.2 1.1-.5l.6.7c-.5.4-1 .6-1.7.6zm3.5-2.3h-1.4v-.8h1.4v-1.4h.8v1.4h1.4v.8h-1.4v1.4h-.8v-1.4zm4 0h-1.4v-.8h1.4v-1.4h.8v1.4h1.4v.8h-1.4v1.4h-.8v-1.4z"/></svg>`;
+  }
+  // JavaScript
+  if(n.includes('javascript') || n === 'js') {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><rect width="24" height="24" rx="3" fill="#F7DF1E"/><path fill="#000" d="M12.5 17.5c0 1.3-.8 2-2 2-1.3 0-1.9-.8-2.3-1.5l1.3-.8c.2.4.5.8 1 .8.4 0 .7-.2.7-.6v-6.2h1.3v6.3zm6.6-.4c-.4.8-1.2 1.4-2.4 1.4-1.6 0-2.6-1.1-2.6-2.6 0-1.8 1.1-2.6 2.7-2.6.4 0 .8.1 1.1.2v-.4c0-.6-.4-1-1.2-1-.6 0-1.1.3-1.3.7l-1.1-.7c.5-.9 1.4-1.3 2.5-1.3 1.6 0 2.4.9 2.4 2.3v4zm-1.3-1.8c-.3-.1-.6-.2-1-.2-.8 0-1.3.4-1.3 1.2 0 .7.5 1.2 1.3 1.2.6 0 1-.3 1-.7v-1.5z"/></svg>`;
+  }
+  // HTML
+  if(n.includes('html')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#E34F26" d="M3 2l1.6 18.5L12 23l7.4-2.5L21 2H3z"/><path fill="#EF652A" d="M12 3.8v17.4l6-2 1.3-15.4H12z"/><path fill="#EDEAEA" d="M12 8.4H7.5l.3 3.4h4.2V8.4zm0 6.6H7.9l.2 2 3.9 1.1v-3.1z"/><path fill="#fff" d="M12 8.4v3.4h4.1l-.4 4.3-3.7 1v3.2l6-2 .9-9.9H12z"/></svg>`;
+  }
+  // CSS
+  if(n.includes('css')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#1572B6" d="M3 2l1.6 18.5L12 23l7.4-2.5L21 2H3z"/><path fill="#33A9DC" d="M12 3.8v17.4l6-2 1.3-15.4H12z"/><path fill="#EDEAEA" d="M12 8.4H7.5l.3 3.4h4.2V8.4zm0 6.6H7.9l.2 2 3.9 1.1v-3.1z"/><path fill="#fff" d="M12 8.4v3.4h4.1l-.4 4.3-3.7 1v3.2l6-2 .9-9.9H12z"/></svg>`;
+  }
+  // MATLAB
+  if(n.includes('matlab')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#E16726" d="M3 17.5c2.5-3 5-1 7.5-6.5C12 7 13.5 3 15 3c1.2 0 1.8 7 3.5 10 1.2 2.2 3.5 3 4.5 3-1 2-4 3.5-7 2.5-2.5-.8-3.5-3-5.5-3-1.8 0-3 1.5-4.5 2-1 .3-2 0-3-1z"/></svg>`;
+  }
+  // ESP32 & STM32
+  if(n.includes('esp32') || n.includes('stm32')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><rect x="4" y="4" width="16" height="16" rx="2" fill="#1c1a17" stroke="#FF5A1F" stroke-width="1.5"/><circle cx="7.5" cy="7.5" r="1" fill="#FF5A1F"/><path d="M4 8H1M4 12H1M4 16H1M20 8h3M20 12h3M20 16h3M8 4V1M12 4V1M16 4V1M8 20v3M12 20v3M16 20v3" stroke="#FF5A1F" stroke-width="1.3"/><rect x="8" y="8" width="8" height="8" rx="1" fill="#2d1c13" stroke="#ff7a3d" stroke-width="1"/></svg>`;
+  }
+  // Arduino
+  if(n.includes('arduino')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#00979D" d="M7 7a5 5 0 0 0-5 5 5 5 0 0 0 5 5c2.3 0 4.2-1.5 4.8-3.6.2-.8.2-1.7 0-2.5A5.02 5.02 0 0 0 7 7zm10 0a5.02 5.02 0 0 0-4.8 3.9c-.2.8-.2 1.7 0 2.5A5.02 5.02 0 0 0 17 17a5 5 0 0 0 5-5 5 5 0 0 0-5-5zM5 11h4v2H5v-2zm11 0h1V9h2v2h1v2h-1v2h-2v-2h-1v-2z"/></svg>`;
+  }
+  // KiCad
+  if(n.includes('kicad')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><rect width="24" height="24" rx="4" fill="#314CB0"/><path fill="#fff" d="M6 6h2.2v5.2L12 6h2.8l-4.5 5.8L15 18h-2.8l-3.2-5.4V18H6V6zm9.8 4.2c0-2.3 1.8-4.2 4.2-4.2s4.2 1.8 4.2 4.2-1.8 4.2-4.2 4.2-4.2-1.9-4.2-4.2zm6.2 0c0-1.1-.9-2-2-2s-2 .9-2 2 .9 2 2 2 2-.9 2-2z"/></svg>`;
+  }
+  // NRF24L01
+  if(n.includes('nrf24')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="none" stroke="#FF5A1F" stroke-width="1.6" stroke-linecap="round" d="M12 15a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm-4.9-5a7 7 0 0 0 0 6m9.8-6a7 7 0 0 1 0 6M4.2 7.1a11 11 0 0 0 0 9.8m15.6-9.8a11 11 0 0 1 0 9.8M12 15v6"/></svg>`;
+  }
+  // MPU6050 / IMU
+  if(n.includes('mpu6050') || n.includes('imu')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="9" fill="none" stroke="#29B6F6" stroke-width="1.5"/><path d="M12 3v18M3 12h18" stroke="#29B6F6" stroke-width="1.2" stroke-dasharray="2 2"/><circle cx="12" cy="12" r="3" fill="#0288D1"/><path d="M16 8l3-3m-3 0h3v3" stroke="#29B6F6" stroke-width="1.4" fill="none"/></svg>`;
+  }
+  // PIR & Ultrasonic
+  if(n.includes('pir') || n.includes('ultrasonic')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="none" stroke="#66BB6A" stroke-width="1.5" d="M4 12a8 8 0 0 1 16 0M7 12a5 5 0 0 1 10 0M10 12a2 2 0 0 1 4 0"/><circle cx="12" cy="16" r="2" fill="#66BB6A"/><path d="M12 18v4" stroke="#66BB6A" stroke-width="1.5"/></svg>`;
+  }
+  // pH, TDS, Turbidity
+  if(n.includes('ph') || n.includes('tds') || n.includes('turbidity')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#26C6DA" d="M12 2.7S6 9.5 6 14.5a6 6 0 0 0 12 0C18 9.5 12 2.7 12 2.7zm-2 13.8a3 3 0 0 1-2.8-3 .8.8 0 0 1 1.6 0 1.4 1.4 0 0 0 1.4 1.4.8.8 0 0 1 0 1.6z"/><path d="M10 8h4M9 11h6" stroke="#004D40" stroke-width="1.2"/></svg>`;
+  }
+  // OLED & Serial
+  if(n.includes('oled') || n.includes('serial')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><rect x="3" y="4" width="18" height="13" rx="2" fill="#141311" stroke="#FFA726" stroke-width="1.5"/><path d="M6 8h7M6 11h10M6 14h5" stroke="#FFA726" stroke-width="1.2" stroke-linecap="round"/><path d="M9 19h6M12 17v4" stroke="#FFA726" stroke-width="1.3"/></svg>`;
+  }
+  // NumPy
+  if(n.includes('numpy')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#4DABCF" d="M12 2L4 6.5v9L12 20l8-4.5v-9L12 2zm0 2.2l5.8 3.3L12 10.8 6.2 7.5 12 4.2zM5.5 8.7l5.7 3.3v6.5l-5.7-3.2V8.7zm7.3 9.8v-6.5l5.7-3.3v6.6l-5.7 3.2z"/></svg>`;
+  }
+  // Matplotlib
+  if(n.includes('matplotlib')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#11557C" d="M3 3v18h18v-2H5V3H3z"/><path fill="none" stroke="#FF5A1F" stroke-width="1.8" stroke-linecap="round" d="M6 16l4-7 4 5 5-9"/><circle cx="10" cy="9" r="1.8" fill="#FFE052"/><circle cx="14" cy="14" r="1.8" fill="#FFE052"/><circle cx="19" cy="5" r="1.8" fill="#FFE052"/></svg>`;
+  }
+  // pyqtgraph
+  if(n.includes('pyqtgraph')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><rect x="2" y="3" width="20" height="18" rx="2" fill="#0C1B23" stroke="#26A69A" stroke-width="1.4"/><path fill="none" stroke="#26A69A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 12h3l2-6 3 12 3-8 2 4h3"/></svg>`;
+  }
+  // Machine Learning
+  if(n.includes('machine learning')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><circle cx="5" cy="6" r="2.5" fill="#AB47BC"/><circle cx="5" cy="18" r="2.5" fill="#AB47BC"/><circle cx="12" cy="12" r="2.5" fill="#AB47BC"/><circle cx="19" cy="6" r="2.5" fill="#AB47BC"/><circle cx="19" cy="18" r="2.5" fill="#AB47BC"/><path d="M7 7l3.5 3.5m0 3L7 17M14 10.5L17 7m-3 6.5l3 3.5M7 6h10M7 18h10" stroke="#AB47BC" stroke-width="1.2" opacity=".6"/></svg>`;
+  }
+  // JSON Data Pipelines
+  if(n.includes('json')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#FFA726" d="M8 4c-1.1 0-2 .9-2 2v2c0 1.1-.9 2-2 2 1.1 0 2 .9 2 2v2c0 1.1.9 2 2 2h1v-2H8v-3c0-1.1-.9-2-2-2 1.1 0 2-.9 2-2V6h1V4H8zm8 0c1.1 0 2 .9 2 2v2c0 1.1.9 2 2 2-1.1 0-2 .9-2 2v2c0 1.1-.9 2-2 2h-1v-2h1v-3c0-1.1.9-2 2-2-1.1 0-2-.9-2-2V6h-1V4h1z"/><circle cx="12" cy="12" r="1.5" fill="#FFA726"/></svg>`;
+  }
+  // WiFi Protocols
+  if(n.includes('wifi')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#42A5F5" d="M12 18a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm0-6c3.2 0 6.2 1.3 8.3 3.4l-2.1 2.1a9 9 0 0 0-12.4 0L3.7 15.4A11.9 11.9 0 0 1 12 12zm0-6c5 0 9.7 2 13 5.4l-2.1 2.2a15.4 15.4 0 0 0-21.8 0L-1 11.4A18.4 18.4 0 0 1 12 6z"/></svg>`;
+  }
+  // RF Principles
+  if(n.includes('rf') || n.includes('principles')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="none" stroke="#FF7043" stroke-width="1.8" stroke-linecap="round" d="M2 12c2.5-7 5-7 7.5 0s5 7 7.5 0 5-7 7.5 0"/><line x1="2" y1="12" x2="22" y2="12" stroke="#6f6a61" stroke-width="1" stroke-dasharray="2 2"/></svg>`;
+  }
+  // Wireless Interference
+  if(n.includes('interference')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="9" fill="none" stroke="#EF5350" stroke-width="1.4"/><path d="M12 7l1.5 3.5 3.5 1-2.8 2.3.8 3.7-3-2-3 2 .8-3.7-2.8-2.3 3.5-1L12 7z" fill="#EF5350" opacity=".7"/><path d="M4 4l16 16" stroke="#EF5350" stroke-width="1.5"/></svg>`;
+  }
+  // Deauthentication
+  if(n.includes('deauth')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#E57373" d="M18 8h-1V6c0-2.8-2.2-5-5-5S7 3.2 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.7 1.3-3 3-3s3 1.3 3 3v2H9V6zm3 10c-.8 0-1.5-.7-1.5-1.5S11.2 13 12 13s1.5.7 1.5 1.5S12.8 16 12 16z"/><line x1="3" y1="3" x2="21" y2="21" stroke="#FF1744" stroke-width="2"/></svg>`;
+  }
+  // Evil Twin
+  if(n.includes('evil twin')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#D32F2F" d="M12 2L4 5v6.1c0 5 3.4 9.8 8 10.9 4.6-1.1 8-5.9 8-10.9V5l-8-3zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>`;
+  }
+  // OS Modification
+  if(n.includes('os modification')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#FFB74D" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54A.48.48 0 0 0 14 2h-4a.48.48 0 0 0-.49.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.63 8.47a.49.49 0 0 0 .12.61l2.03 1.58c-.05.3-.07.63-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.26.41.49.41h4c.24 0 .44-.17.49-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>`;
+  }
+  // System Installation
+  if(n.includes('installation')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#81C784" d="M19 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm-7 13l-4-4h2.5V9h3v4H16l-4 4zm6 2H6v-2h12v2z"/></svg>`;
+  }
+  // Shell CLI
+  if(n.includes('cli') || n.includes('shell')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><rect x="2" y="3" width="20" height="18" rx="2" fill="#141311" stroke="#4CAF50" stroke-width="1.5"/><path d="M6 8l4 4-4 4M12 16h6" stroke="#4CAF50" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+  }
+  // Tkinter
+  if(n.includes('tkinter')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><rect x="3" y="3" width="18" height="18" rx="2" fill="#0E1726" stroke="#00B0FF" stroke-width="1.5"/><path d="M3 7h18M7 5.2h.01M9.5 5.2h.01M12 5.2h.01" stroke="#00B0FF" stroke-width="1.5"/><rect x="6" y="10" width="12" height="4" rx="1" fill="#00B0FF" opacity=".3"/></svg>`;
+  }
+  // PyQt5
+  if(n.includes('pyqt')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><rect width="24" height="24" rx="3" fill="#41CD52"/><text x="3" y="17" fill="#fff" font-family="'Inter', sans-serif" font-weight="800" font-size="13">Qt5</text></svg>`;
+  }
+  // QR Code / Barcode
+  if(n.includes('qr') || n.includes('barcode')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><rect x="3" y="3" width="7" height="7" fill="none" stroke="#ECE7DC" stroke-width="1.5"/><rect x="5" y="5" width="3" height="3" fill="#ECE7DC"/><rect x="14" y="3" width="7" height="7" fill="none" stroke="#ECE7DC" stroke-width="1.5"/><rect x="16" y="5" width="3" height="3" fill="#ECE7DC"/><rect x="3" y="14" width="7" height="7" fill="none" stroke="#ECE7DC" stroke-width="1.5"/><rect x="5" y="16" width="3" height="3" fill="#ECE7DC"/><path d="M14 14h3v3h-3zm4 0h3v3h-3zm-4 4h3v3h-3zm4 0h3v3h-3z" fill="#ECE7DC"/></svg>`;
+  }
+  // Git
+  if(n.includes('git ') || n.includes('git version')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#F05032" d="M21.7 10.7l-8.4-8.4a2 2 0 0 0-2.8 0L8.6 4.2l3.4 3.4a2.4 2.4 0 0 1 3.1 3.1l3.3 3.3a2.4 2.4 0 1 1-1.4 1.4L15.3 12a2.4 2.4 0 0 1-2.3-1.6L9.6 7 2.3 14.3a2 2 0 0 0 0 2.8l8.4 8.4a2 2 0 0 0 2.8 0l8.2-8.2a2 2 0 0 0 0-2.8v-.2z"/></svg>`;
+  }
+  // GitHub
+  if(n.includes('github')) {
+    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#ECE7DC" fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>`;
+  }
+
+  // Fallback icon
+  return `<svg viewBox="0 0 24 24" width="18" height="18"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5" fill="none" stroke="#FF5A1F" stroke-width="1.5"/><circle cx="12" cy="12" r="2.5" fill="#FF5A1F"/></svg>`;
+}
+
 function renderSkills(){
   const cats = Object.entries(portfolioData.skills);
-  const html = cats.map(([cat, list]) => `
+  const html = cats.map(([cat, list], idx) => `
     <div class="spec-col reveal">
-      <div class="sc-head">${cat}</div>
-      <ul>${list.map(s => `<li>${s}</li>`).join('')}</ul>
+      <div class="sc-head">
+        <div class="sc-head-title">DOMAIN // ${pad2(idx + 1)} &bull; ${cat}</div>
+        <span class="sc-head-badge">${pad2(list.length)} SPECS</span>
+      </div>
+      <ul>
+        ${list.map(s => `
+          <li>
+            <div class="skill-badge">
+              <div class="sb-icon">${getSkillSvg(s)}</div>
+              <span class="sb-name">${s}</span>
+            </div>
+          </li>
+        `).join('')}
+      </ul>
     </div>`).join('');
   $('skillsSheet').innerHTML = html;
 }

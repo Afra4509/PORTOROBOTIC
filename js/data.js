@@ -58,12 +58,12 @@ const portfolioData = {
   // --------------------------------------------------------------------------
   sectionIntros: {
     education: "Formal academic foundations at Institut Teknologi Sepuluh Nopember (ITS) and secondary science education.",
-    organizations: "Motorsport-style timeline of active organizational leadership, community initiatives, and youth development.",
+    organizations: "Rekam jejak kepemimpinan organisasi, inisiatif kerelawanan sosial kemasyarakatan, advokasi pemuda, dan bimbingan akademik intensif.",
     projects: "High-performance engineering developments across custom PCB hardware, low-level firmware, wireless security labs, and telemetry systems.",
     iot: "Connected microcontroller telemetry nodes, wireless repeaters, custom OS kernels, RF spectrum experiments, and sensor instrumentation.",
     pcb: "Multi-layer schematic engineering, high-frequency routing, power electronics, step-down converters, and CAN bus transceivers.",
     portal: "Navigasi menuju website utama (aefera.me) untuk mengeksplorasi portofolio rekayasa perangkat lunak (software engineering), full-stack web development, dan repositori open-source.",
-    achievements: "Engineering competition milestones, academic achievements, and ongoing development logs."
+    achievements: "Engineering milestones, organizational track record, and technical field development logs."
   },
 
   // --------------------------------------------------------------------------
@@ -76,7 +76,7 @@ const portfolioData = {
       department: "Departemen Statistika Bisnis",
       status: "Mahasiswa Aktif",
       nrp: "2058261004",
-      year: "[ADD YEAR]",
+      year: "2024 — Sekarang",
       location: "Surabaya, Indonesia",
       focus: "Applied Logistics Analytics, Data Engineering, IoT & Embedded Systems",
       description: "Menempuh pendidikan vokasi sarjana terapan di Departemen Statistika Bisnis dengan fokus kurikulum pada analitika logistik, pemodelan data statistik, integrasi sistem informasi rantai pasok, dan komputasi cerdas.",
@@ -90,7 +90,7 @@ const portfolioData = {
       department: "Science / Mathematics Track",
       status: "Alumni",
       nrp: "-",
-      year: "[ADD YEAR]",
+      year: "2021 — 2024",
       location: "Pasuruan, Indonesia",
       focus: "Science, Mathematics & Computational Foundations",
       description: "Pendidikan menengah atas dengan fokus pada sains, matematika, serta keaktifan dalam organisasi kesiswaan seni, budaya, dan teater.",
@@ -102,7 +102,7 @@ const portfolioData = {
 
   // --------------------------------------------------------------------------
   // ORGANIZATIONS & ACTIVITIES
-  // Editorial timeline / motorsport engineering team history
+  // Editorial timeline of organizational and community leadership
   // --------------------------------------------------------------------------
   organizations: [
     {
@@ -110,7 +110,7 @@ const portfolioData = {
       name: "Karang Taruna Purworejo, Pasuruan",
       position: "Anggota // Relawan Fotografi & Dokumenter",
       year: "2025–2026",
-      tag: "COMMUNITY YOUTH PADDOCK",
+      tag: "COMMUNITY & SOCIAL VOLUNTEER",
       description: "Aktif berkontribusi sebagai relawan dokumentasi visual pada berbagai agenda sosial kemasyarakatan dan program pengembangan ekonomi warga.",
       bullets: [
         "Bertindak sebagai fotografer utama dan tim dokumenter dalam program sertifikasi dan pendampingan Label Halal Gratis bagi pelaku UMKM lokal.",
@@ -215,9 +215,9 @@ const portfolioData = {
       type: "pcb",
       selected: true,
       image: "projek pcb/ethernet can gateway.png",
-      artDirection: "VEHICLE & INDUSTRIAL BUS INTERFACE",
+      artDirection: "ROBOTICS & INDUSTRIAL BUS INTERFACE",
       hudTag: "BUS // CAN 2.0B + ETHERNET",
-      description: "Gateway komunikasi industri yang dirancang mandiri untuk menjembatani bus telemetri otomotif CAN 2.0B dengan jaringan kabel Ethernet 10/100 Mbps. Dilengkapi supresi lonjakan tegangan transien (TVS diode protection), isolasi sinyal, dan jalur diferensial 120-ohm matched impedance untuk transmisi data telemetri yang tahan derau elektromagnetik.",
+      description: "Gateway komunikasi industri yang dirancang mandiri untuk menjembatani bus kontrol industri CAN 2.0B dengan jaringan kabel Ethernet 10/100 Mbps. Dilengkapi supresi lonjakan tegangan transien (TVS diode protection), isolasi sinyal, dan jalur diferensial 120-ohm matched impedance untuk transmisi data telemetri yang tahan derau elektromagnetik.",
       tech: "KiCad, CAN 2.0B Controller, TJA1050 Transceiver, W5500 SPI Ethernet, TVS Diodes, C++",
       role: "Solo Systems & Hardware Engineer (Desain Skematik, Routing & Protokol Mandiri)",
       year: "2025",
@@ -232,7 +232,7 @@ const portfolioData = {
       type: "pcb",
       selected: true,
       image: "projek pcb/stm32 custom board.png",
-      artDirection: "HIGH-SPEED RACING CONTROL ARCHITECTURE",
+      artDirection: "HIGH-SPEED EMBEDDED CONTROL ARCHITECTURE",
       hudTag: "MCU // STM32 ARM CORTEX",
       description: "Papan kontroler komputasi tersemat mandiri bertenaga ARM Cortex-M 32-bit untuk pemrosesan aktuator dan sensor real-time. Menampilkan regulator daya ganda 5V/3.3V berstabilitas tinggi, crystal oscillator presisi, antarmuka debugging SWD, serta ekspansi I/O berdensitas tinggi untuk pengendalian motorik dan telemetri serial.",
       tech: "KiCad, STM32 Microcontroller, STM32CubeIDE, SWD Debugger, Multi-Rail Power, C/C++",
@@ -398,22 +398,22 @@ const portfolioData = {
   ],
 
   // --------------------------------------------------------------------------
-  // ACHIEVEMENTS / TELEMETRY
+  // ACHIEVEMENTS & KEY MILESTONES
   // --------------------------------------------------------------------------
   achievements: [
-    { title: "[ADD ACHIEVEMENT]", year: "[ADD YEAR]", event: "[ADD EVENT]", result: "[ADD RESULT / ROLE]" },
-    { title: "[ADD ACHIEVEMENT]", year: "[ADD YEAR]", event: "[ADD EVENT]", result: "[ADD RESULT / ROLE]" },
-    { title: "[ADD ACHIEVEMENT]", year: "[ADD YEAR]", event: "[ADD EVENT]", result: "[ADD RESULT / ROLE]" },
-    { title: "[ADD ACHIEVEMENT]", year: "[ADD YEAR]", event: "[ADD EVENT]", result: "[ADD RESULT / ROLE]" },
-    { title: "[ADD ACHIEVEMENT]", year: "[ADD YEAR]", event: "[ADD EVENT]", result: "[ADD RESULT / ROLE]" },
-    { title: "[ADD ACHIEVEMENT]", year: "[ADD YEAR]", event: "[ADD EVENT]", result: "[ADD RESULT / ROLE]" }
+    { title: "Custom PCB R&D & Embedded Systems", year: "2024–2025", event: "Independent Hardware Laboratory", result: "Solo Circuit Designer & Firmware Engineer" },
+    { title: "Pentas Aplikasi Teater Catur", year: "2024", event: "Pentas Akbar Teater SMAN 2 Pasuruan", result: "Ketua Divisi PDD & Dokumentasi Utama" },
+    { title: "Event Akbar Seirama & Abirama", year: "2024", event: "OSIS SMAN 2 Kota Pasuruan", result: "Sponsorship & Lead Dokumentasi Visual" },
+    { title: "Pendamping Belajar UTBK-SNBT", year: "2025–2026", event: "Time Tutorial Service (TST) — Study Buddy", result: "Peer Tutor Penalaran Umum & Kuantitatif" },
+    { title: "Program Sertifikasi Halal Gratis UMKM", year: "2025", event: "Pemberdayaan Warga — Karang Taruna", result: "Relawan Fotografer & Tim Dokumenter" },
+    { title: "Festival Al-Banjari & Hari Kemerdekaan", year: "2025", event: "Forum Anak Kecamatan Purworejo", result: "Lead Dokumentasi & Tim Operasional Lapangan" }
   ],
 
   // --------------------------------------------------------------------------
   // TECHNICAL SPECIFICATION SHEET (ACTUAL SKILLS AS PROVIDED)
   // --------------------------------------------------------------------------
   skills: {
-    "PROGRAMMING": [
+    "PROGRAMMING LANGUAGES": [
       "Python",
       "C++ (Arduino)",
       "JavaScript",
@@ -421,7 +421,7 @@ const portfolioData = {
       "CSS",
       "MATLAB"
     ],
-    "IoT & ELECTRONICS": [
+    "IoT & EMBEDDED HARDWARE": [
       "ESP32 & STM32 Microcontrollers",
       "Arduino Prototyping",
       "KiCad (Schematic & PCB Design)",
@@ -431,32 +431,30 @@ const portfolioData = {
       "pH, TDS & Turbidity Sensors",
       "OLED Display & Serial Communication"
     ],
-    "DATA / AI / VISUALIZATION": [
+    "DATA, AI & VISUALIZATION": [
       "NumPy",
       "Matplotlib",
       "pyqtgraph",
       "Basic Machine Learning",
       "JSON Data Pipelines"
     ],
-    "NETWORKING & WIRELESS SECURITY": [
+    "NETWORKING & WIRELESS LAB": [
       "WiFi 802.11 Protocols",
       "Basic RF Principles",
       "Wireless Interference Analysis",
       "Deauthentication (Research Context)",
       "Evil Twin Testing (Educational Lab)"
     ],
-    "SYSTEMS & OS": [
-      "OS Modification & Customization",
-      "System Installation",
-      "System Configuration & Shell CLI"
-    ],
-    "DESKTOP & WEB": [
+    "DESKTOP & WEB APPS": [
       "Tkinter GUI Development",
       "PyQt5 Desktop Applications",
       "jsQR Barcode Integration",
       "QRCode.js Library"
     ],
-    "TOOLS & COLLABORATION": [
+    "SYSTEMS, OS & DEV TOOLS": [
+      "OS Modification & Customization",
+      "System Installation",
+      "System Configuration & Shell CLI",
       "Git Version Control",
       "GitHub Repository Management"
     ]
