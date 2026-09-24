@@ -177,24 +177,28 @@ function renderFixedFields(){
       icon: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>`
     }
   ];
-  $('contactList').innerHTML = contactRows.map(r => `
-    <a class="contact-card reveal" href="${r.href}" target="_blank" rel="noopener" style="--brand-color: ${r.color};">
-      <div class="cc-left">
-        <div class="cc-icon-box" aria-hidden="true">${r.icon}</div>
-        <div class="cc-info">
-          <div class="cc-val">${r.val}</div>
-          <div class="cc-meta">
-            <span class="cc-k">${r.key}</span>
-            <span class="cc-sep">&bull;</span>
-            <span class="cc-sub">${r.sub}</span>
+  const cl = $('contactList');
+  if(cl) {
+    cl.innerHTML = contactRows.map(r => `
+      <a class="contact-card reveal" href="${r.href}" target="_blank" rel="noopener" style="--brand-color: ${r.color};">
+        <div class="cc-left">
+          <div class="cc-icon-box" aria-hidden="true">${r.icon}</div>
+          <div class="cc-info">
+            <div class="cc-val">${r.val}</div>
+            <div class="cc-meta">
+              <span class="cc-k">${r.key}</span>
+              <span class="cc-sep">&bull;</span>
+              <span class="cc-sub">${r.sub}</span>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="cc-right">
-        <span class="cc-action">${r.action}</span>
-        <span class="cc-arrow">&nearr;</span>
-      </div>
-    </a>`).join('');
+        <div class="cc-right">
+          <span class="cc-action">${r.action}</span>
+          <span class="cc-arrow">&nearr;</span>
+        </div>
+      </a>
+    `).join('');
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -690,14 +694,14 @@ function renderSideNav(){
   
   function openMobileNav(){
     if(drawer) {
-      drawer.classList.add('open');
+      drawer.classList.add('is-open', 'open');
       drawer.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
     }
   }
   function closeMobileNav(){
     if(drawer) {
-      drawer.classList.remove('open');
+      drawer.classList.remove('is-open', 'open');
       drawer.setAttribute('aria-hidden', 'true');
       document.body.style.overflow = '';
     }
@@ -745,7 +749,7 @@ function initSectionObserver(){
         }
       }
     });
-  }, { threshold: 0.28 });
+  }, { rootMargin: '-15% 0px -55% 0px', threshold: 0 });
   SECTIONS.forEach(s => { const el = $(s.id); if(el) obs.observe(el); });
 }
 
