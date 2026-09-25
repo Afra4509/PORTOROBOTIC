@@ -57,7 +57,7 @@ function renderFixedFields(){
   const hn = $('heroName');
   if(hn){
     const words = (p.name || "AFRA FADHMA DINATA").toUpperCase().split(' ');
-    hn.innerHTML = words.map(w => `<span class="hn-line">${w}</span>`).join('');
+    hn.innerHTML = words.map(w => `<span class="hn-line">${w}</span>`).join(' ');
   }
   setText('heroField', p.field);
   setText('heroRole', p.role);

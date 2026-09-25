@@ -532,6 +532,7 @@ body.loaded #loader { opacity: 0; visibility: hidden; pointer-events: none; }
   font-family: var(--font-display); font-weight: 400; letter-spacing: 0.01em;
   font-size: clamp(1.8rem, 4.8vw, 3.4rem); line-height: 1.02; text-transform: uppercase;
   word-break: break-word;
+}
 .section-intro {
   position: relative; z-index: 1; margin-top: 16px; max-width: 58ch;
   color: var(--paper-dim); font-size: var(--fs-body); line-height: 1.6;
