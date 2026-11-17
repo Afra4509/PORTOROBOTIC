@@ -1,1077 +1,755 @@
 /* ==========================================================================
-   PORTFOLIO ENGINE & INTERACTIVE LOGIC (js/main.js)
-   Renders all dynamic sections from portfolioData (js/data.js):
-   - Hero, Profile & Contact for Afra Fadhma Dinata (NRP: 2058261004)
-   - Education Credentials (ITS & SMAN 2 Pasuruan)
-   - Organizations & Leadership Timeline
-   - Selected Projects Flagships
-   - IoT & Embedded Projects Catalog
-   - PCB & Electronics Projects Catalog
-   - Technical Skills Spec Sheet (7 Categories)
-   - Achievements & Dev Log
-   - Lightbox High-Resolution Telemetry Inspector
+   Portofolio: render konten dari data.js dan semua motion.
+   Tanpa library. Bagian utama:
+   1. Helper dan render
+   2. Engine scroll (parallax dengan smoothing, progress, teks bertahap)
+   3. Reveal, tema background, header, menu
+   4. Viewer, preview hover, filter
+   5. Pembuka dan init
    ========================================================================== */
+(function () {
+  'use strict';
 
-// Helper selector shortcuts
-function $(id){ return document.getElementById(id); }
-function setText(id, val){ const el = $(id); if(el) el.textContent = val; }
-function pad2(n){ return String(n).padStart(2,'0'); }
+  const D = portfolioData;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const canHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
-// Safely encodes relative asset paths with spaces or special characters
-function getAssetUrl(path){
-  if(!path) return '';
-  if(path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) return path;
-  return encodeURI(path);
-}
+  /* ------------------------------------------------------------------ */
+  /* 1. Helper & Icons                                                  */
+  /* ------------------------------------------------------------------ */
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ESC[c]);
+  const asset = (p) => (!p ? '' : /^(https?:|data:)/.test(p) ? p : encodeURI(p));
+  const projectIndex = (id) => D.projects.findIndex((p) => p.id === id);
 
-// Sanitizes and formats external URLs
-function urlFor(v){
-  if(!v || v.startsWith('[')) return '#';
-  return v.startsWith('http') ? v : `https://${v}`;
-}
+  const ICONS = {
+    // Keahlian
+    code: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
+    chip: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>`,
+    chart: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
+    wifi: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>`,
+    desktop: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`,
+    terminal: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>`,
 
-// Builds technical media frames with engineering HUD labels, scanner sweep, and zoom inspection trigger
-function mediaFrame({ image, label, tag, hudTag, extraClass, zoomTitle }){
-  const src = getAssetUrl(image);
-  const zoomAttr = src ? `data-zoom-src="${src}" data-zoom-title="${zoomTitle || label}"` : '';
-  return `
-    <div class="media-frame tilt ${extraClass||''}" ${zoomAttr}>
-      <img src="${src}" alt="${label}" loading="lazy" />
-      <span class="mf-c1"></span><span class="mf-c2"></span>
-      <span class="mf-overlay"></span>
-      <span class="mf-scanline"></span>
-      ${hudTag ? `<span class="mf-hud-top">${hudTag}</span>` : ''}
-      <span class="mf-tag">${tag}</span>
-      <div class="mf-zoom-hint"><span class="mf-zoom-badge">INSPECT [+]</span></div>
-    </div>`;
-}
+    // Proyek per-area
+    pcb: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M7 2v4"/><path d="M17 2v4"/><path d="M2 12h5l2 3h6l2-3h5"/><circle cx="7" cy="18" r="1.5"/><circle cx="17" cy="18" r="1.5"/></svg>`,
+    power: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+    rf: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>`,
+    firmware: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>`,
+    cloud: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>`,
+    network: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`,
+    gauge: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m4.93 4.93 2.83 2.83"/><path d="M2 12h4"/><path d="m4.93 19.07 2.83-2.83"/><path d="M12 22v-4"/><path d="m19.07 19.07-2.83-2.83"/><path d="M22 12h-4"/><path d="m19.07 4.93-2.83 2.83"/></svg>`,
+    robot: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>`,
 
-/* --------------------------------------------------------------------------
-   01 — FIXED FIELDS (Hero, Profile, Topbar, Contact, Footer)
-   -------------------------------------------------------------------------- */
-function renderFixedFields(){
-  const p = portfolioData.profile;
-  setText('topIdTag', p.name.toUpperCase());
-  setText('topYear', p.year);
-  setText('loaderName', p.name.toUpperCase());
-  const hn = $('heroName');
-  if(hn){
-    const words = (p.name || "AFRA FADHMA DINATA").toUpperCase().split(' ');
-    hn.innerHTML = words.map(w => `<span class="hn-line">${w}</span>`).join(' ');
+    // Kontak
+    whatsapp: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>`,
+    github: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>`,
+    linkedin: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>`,
+    instagram: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>`,
+    globe: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`
+  };
+
+  function getSkillIcon(group) {
+    if (/bahasa|pemrograman|code/i.test(group)) return ICONS.code;
+    if (/iot|hardware|elektronika/i.test(group)) return ICONS.chip;
+    if (/data|visual/i.test(group)) return ICONS.chart;
+    if (/jaringan|nirkabel|wireless|rf/i.test(group)) return ICONS.wifi;
+    if (/aplikasi|desktop|web/i.test(group)) return ICONS.desktop;
+    if (/sistem|tools|os/i.test(group)) return ICONS.terminal;
+    return ICONS.chip;
   }
-  setText('heroField', p.field);
-  setText('heroRole', p.role);
-  setText('metaLocation', p.location.toUpperCase());
-  setText('metaField', p.fieldShort);
-  setText('metaStatus', p.status);
-  setText('metaYear', p.year);
-  document.title = `${p.name} — Engineering & Robotics Portfolio`;
 
-  // Hero visual using real flagship hardware
-  const heroMedia = $('heroMedia');
-  if(heroMedia){
-    heroMedia.innerHTML = mediaFrame({
-      image: p.heroImage,
-      label: p.heroTag,
-      tag: p.heroTag,
-      hudTag: p.heroHud || "HARDWARE TELEMETRY",
-      zoomTitle: "HERO CORE HARDWARE"
+  function getProjectIcon(area) {
+    switch (area) {
+      case 'PCB': return ICONS.pcb;
+      case 'Daya': return ICONS.power;
+      case 'RF': return ICONS.rf;
+      case 'Firmware': return ICONS.firmware;
+      case 'Cloud': return ICONS.cloud;
+      case 'Jaringan': return ICONS.network;
+      case 'Instrumentasi': return ICONS.gauge;
+      case 'Robotika': return ICONS.robot;
+      default: return ICONS.chip;
+    }
+  }
+
+  function getContactIcon(label) {
+    if (/whatsapp|wa/i.test(label)) return ICONS.whatsapp;
+    if (/github/i.test(label)) return ICONS.github;
+    if (/linkedin/i.test(label)) return ICONS.linkedin;
+    if (/instagram/i.test(label)) return ICONS.instagram;
+    if (/situs|web|aefera/i.test(label)) return ICONS.globe;
+    return ICONS.globe;
+  }
+
+  let engineReady = false;
+
+  /* Bingkai gambar: .media (clip reveal) > .media-in (scale) > img (parallax) */
+  function mediaHTML({ src, alt, fit, tag = 'div', attrs = '', cls = '', parallax = true, eager = false }) {
+    const fitStyle = fit ? ` style="object-fit:${fit}"` : '';
+    const px = parallax ? ' data-img-parallax="0.09"' : '';
+    return `<${tag} class="media ${cls}" ${attrs}><span class="media-in"><img src="${esc(asset(src))}" alt="${esc(alt)}" decoding="async"${px}${fitStyle} /></span></${tag}>`;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Render                                                             */
+  /* ------------------------------------------------------------------ */
+  function renderHero() {
+    const p = D.profile;
+    const name = $('#heroName');
+    name.setAttribute('aria-label', p.name);
+    name.innerHTML = p.name.split(' ').map((w, i) =>
+      `<span class="line" data-dir="${i % 2 ? 1 : -1}" aria-hidden="true"><span class="line-in" style="--i:${i}">${esc(w)}</span></span>`
+    ).join('');
+
+    const proj = D.projects[projectIndex(p.heroProject)] || D.projects[0];
+    $('#heroFigure').innerHTML = mediaHTML({
+      src: p.heroImage, alt: proj.name, fit: proj.fit, tag: 'button',
+      attrs: `type="button" data-open="project" data-index="${projectIndex(proj.id)}" aria-label="Lihat detail ${esc(proj.name)}"`
     });
+
+    $('#heroRole').textContent = p.tagline;
+    $('#heroMeta').innerHTML = [
+      ['Lokasi', p.location], ['Fokus', p.focus], ['Status', p.status]
+    ].map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('');
   }
 
-  setText('profileIntro', p.intro);
-  
-  // Render exact 3 profile paragraphs
-  const descEl = $('profileDesc');
-  if(descEl){
-    if(p.paragraphs && p.paragraphs.length){
-      descEl.innerHTML = `
-        <p class="p-lead">${p.paragraphs[0]}</p>
-        <p>${p.paragraphs[1]}</p>
-        <p>${p.paragraphs[2]}</p>
-      `;
-    } else {
-      descEl.textContent = p.description;
+  function renderAbout() {
+    const p = D.profile;
+    $('#statement').innerHTML = p.statement.split(' ').map((w) => `<span class="sw">${esc(w)}</span>`).join(' ');
+    if (reduce) $('#statement').classList.add('static');
+
+    $('#aboutParas').innerHTML = p.paragraphs.map((t, i) => `<p class="rise" style="--d:${i * 0.1}s">${esc(t)}</p>`).join('');
+
+    const facts = [
+      ['Institusi', p.institution], ['Departemen', p.department], ['Program', p.program],
+      ['NRP', p.nrp], ['Status', p.status], ['Lokasi', p.location],
+      ['Minat', p.interests.join(', ')]
+    ];
+    $('#facts').innerHTML = facts.map(([k, v], i) =>
+      `<div class="row" style="--d:${i * 0.05}s"><dt>${k}</dt><dd>${esc(v)}</dd></div>`
+    ).join('');
+
+    $('#portrait').innerHTML = `
+      <div class="portrait-card">
+        <span class="p-cross p-tl" aria-hidden="true">+</span>
+        <span class="p-cross p-tr" aria-hidden="true">+</span>
+        <span class="p-cross p-bl" aria-hidden="true">+</span>
+        <span class="p-cross p-br" aria-hidden="true">+</span>
+        <div class="portrait-media-wrap">
+          ${mediaHTML({ src: p.photo, alt: `Foto ${p.name}`, cls: 'portrait-media' })}
+          <div class="portrait-vignette" aria-hidden="true"></div>
+          <span class="portrait-loc-chip" aria-hidden="true">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"/><circle cx="12" cy="10" r="3"/></svg>
+            Surabaya
+          </span>
+        </div>
+      </div>`;
+
+    $('#eduList').innerHTML = D.education.map((e, i) => `
+      <li class="row" style="--d:${i * 0.08}s">
+        <div class="edu-row">
+          <span class="logo-tile"><img src="${esc(asset(e.image))}" alt="Logo ${esc(e.institution)}" loading="eager" /></span>
+          <div>
+            <span class="edu-name">${esc(e.institution)}</span>
+            <span class="edu-sub">${esc(e.degree)}. ${esc(e.detail)}</span>
+          </div>
+          <span class="edu-period">${esc(e.period)}</span>
+        </div>
+      </li>`).join('');
+  }
+
+  function renderOrgs() {
+    $('#orgList').innerHTML = D.organizations.map((o, i) => `
+      <li class="row org${i === 0 ? ' open' : ''}" style="--d:${i * 0.06}s">
+        <button class="org-head" type="button" aria-expanded="${i === 0}" aria-controls="org-${i}">
+          <span class="org-year">${esc(o.year)}</span>
+          <span><span class="org-name">${esc(o.name)}</span><span class="org-role">${esc(o.position)}</span></span>
+          <span class="org-plus" aria-hidden="true"></span>
+        </button>
+        <div class="org-panel" id="org-${i}" role="region">
+          <div>
+            <div class="org-inner">
+              <span class="logo-tile"><img src="${esc(asset(o.image))}" alt="Logo ${esc(o.name)}" loading="eager" /></span>
+              <div>
+                <p class="org-desc">${esc(o.description)}</p>
+                <ul class="org-bullets">${o.bullets.map((b) => `<li>${esc(b)}</li>`).join('')}</ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </li>`).join('');
+  }
+
+  function renderProjects() {
+    const featured = D.projects.filter((p) => p.featured);
+    $('#featured').innerHTML = featured.map((p, i) => {
+      const idx = projectIndex(p.id);
+      return `
+      <article class="spread${i % 2 ? ' flip' : ''}">
+        <div class="spread-media">
+          ${mediaHTML({ src: p.image, alt: p.name, fit: p.fit, tag: 'button', attrs: `type="button" data-open="project" data-index="${idx}" aria-label="Lihat detail ${esc(p.name)}"` })}
+        </div>
+        <div class="spread-body">
+          <h3 class="spread-title" data-split>${esc(p.name)}</h3>
+          <p class="spread-sum rise">${esc(p.summary)}</p>
+          <dl class="meta rise" style="--d:.08s">
+            <div><dt>Peran</dt><dd>${esc(p.role)}</dd></div>
+            <div><dt>Teknologi</dt><dd>${esc(p.tech)}</dd></div>
+            <div><dt>Tahun</dt><dd>${esc(p.year)}, ${esc(p.status.toLowerCase())}</dd></div>
+          </dl>
+          <button class="btn rise" type="button" data-open="project" data-index="${idx}" style="--d:.14s">Lihat detail</button>
+        </div>
+      </article>`;
+    }).join('');
+
+    const counts = { all: D.projects.length, pcb: D.projects.filter((p) => p.kind === 'pcb').length, iot: D.projects.filter((p) => p.kind === 'iot').length };
+    $('#tabs').innerHTML = [['all', 'Semua'], ['pcb', 'PCB'], ['iot', 'IoT dan embedded']].map(([k, l]) =>
+      `<button type="button" data-filter="${k}" aria-pressed="${k === 'all'}">${l}<sup>${counts[k]}</sup></button>`
+    ).join('');
+
+    renderIndex('all', false);
+  }
+
+  function renderIndex(filter, immediate) {
+    const list = D.projects.filter((p) => filter === 'all' || p.kind === filter);
+    const host = $('#indexList');
+    host.innerHTML = list.map((p, i) => {
+      const icon = getProjectIcon(p.area);
+      return `
+      <li class="row" style="--d:${immediate ? i * 0.04 : 0}s">
+        <button class="row-btn" type="button" data-open="project" data-index="${projectIndex(p.id)}" data-id="${p.id}">
+          <span class="row-left">
+            <span class="row-icon-tile" aria-hidden="true">${icon}</span>
+            <span class="row-name">${esc(p.name)}</span>
+          </span>
+          <span class="row-area"><span class="area-badge">${esc(p.area)}</span></span>
+          <span class="row-year">${esc(p.year)}</span>
+          <span class="row-arrow" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </span>
+        </button>
+      </li>`;
+    }).join('');
+    if (immediate) {
+      requestAnimationFrame(() => $$('.row', host).forEach((r) => r.classList.add('in')));
+    } else if (engineReady) {
+      observeReveals();
     }
   }
 
-  setText('profileInstitution', p.institution);
-  setText('profileDepartment', p.department);
-  setText('profileProgram', p.title);
-  setText('profileNrp', p.nrp);
-  setText('profileStatus2', p.status);
-  setText('profileLocation', p.location);
-
-  const pi = $('profileInterests');
-  if(pi && p.interests) pi.innerHTML = p.interests.map(i => `<li>${i}</li>`).join('');
-
-  setText('educationIntro', portfolioData.sectionIntros.education);
-  setText('orgsIntro', portfolioData.sectionIntros.organizations);
-  setText('projectsIntro', portfolioData.sectionIntros.projects);
-  setText('iotIntro', portfolioData.sectionIntros.iot);
-  setText('pcbIntro', portfolioData.sectionIntros.pcb);
-  setText('portalIntro', portfolioData.sectionIntros.portal);
-  setText('achievementsIntro', portfolioData.sectionIntros.achievements);
-
-  const logEl = $('logGrid');
-  if(logEl && portfolioData.currentBuild){
-    const c = portfolioData.currentBuild;
-    logEl.innerHTML = [
-      ['CURRENTLY LEARNING', c.learning],
-      ['CURRENT PROJECT', c.project],
-      ['CURRENT INTEREST', c.interest],
-      ['NEXT TARGET', c.next]
-    ].map(([label, text]) => `
-      <div class="log-cell">
-        <div class="log-head"><span class="log-dot"></span><span class="log-label">${label}</span></div>
-        <p class="log-text">${text}</p>
-      </div>`).join('');
-  }
-
-  const ct = portfolioData.contact;
-  setText('footerCopy', `© ${p.year} ${p.name.toUpperCase()}`);
-  const contactRows = [
-    {
-      key: 'WHATSAPP',
-      sub: 'Direct Message & Fast Communication',
-      val: ct.whatsapp,
-      href: ct.whatsappUrl,
-      action: 'CHAT NOW',
-      color: '#25D366',
-      icon: `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm.01 1.67c2.2 0 4.26.86 5.82 2.42a8.23 8.23 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24zm4.52 11.66c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.02-1.25-.75-.67-1.26-1.5-1.4-1.75-.15-.25-.02-.39.11-.51.11-.11.25-.29.38-.44.13-.14.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.78 2.72 4.31 3.81.6.26 1.07.41 1.44.53.61.19 1.16.17 1.6.1.49-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.1-.22-.16-.47-.29z"/></svg>`
-    },
-    {
-      key: 'GITHUB',
-      sub: 'Open-Source Repositories & Engineering Labs',
-      val: 'github.com/Afra4509',
-      href: ct.github,
-      action: 'EXPLORE REPOS',
-      color: '#e6edf3',
-      icon: `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>`
-    },
-    {
-      key: 'LINKEDIN',
-      sub: 'Professional Career Network & Connections',
-      val: 'Afra Fadhma Dinata',
-      href: ct.linkedin,
-      action: 'CONNECT',
-      color: '#0a66c2',
-      icon: `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>`
-    },
-    {
-      key: 'MAIN PORTFOLIO',
-      sub: 'Software Engineering, Web Apps & Main Hub',
-      val: 'aefera.me',
-      href: ct.portfolio,
-      action: 'VISIT HUB',
-      color: '#ff5a1f',
-      icon: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`
-    },
-    {
-      key: 'INSTAGRAM',
-      sub: 'Creative Log, Event Photography & Updates',
-      val: '@afrafdhma',
-      href: ct.instagram,
-      action: 'FOLLOW',
-      color: '#E1306C',
-      icon: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>`
-    }
-  ];
-  const cl = $('contactList');
-  if(cl) {
-    cl.innerHTML = contactRows.map(r => `
-      <a class="contact-card reveal" href="${r.href}" target="_blank" rel="noopener" style="--brand-color: ${r.color};">
-        <div class="cc-left">
-          <div class="cc-icon-box" aria-hidden="true">${r.icon}</div>
-          <div class="cc-info">
-            <div class="cc-val">${r.val}</div>
-            <div class="cc-meta">
-              <span class="cc-k">${r.key}</span>
-              <span class="cc-sep">&bull;</span>
-              <span class="cc-sub">${r.sub}</span>
-            </div>
+  function renderSkills() {
+    $('#skillList').innerHTML = D.skills.map((s, i) => {
+      const icon = getSkillIcon(s.group);
+      const tags = s.items.map(it => `<span class="skill-tag">${esc(it)}</span>`).join('');
+      return `
+      <li class="row" style="--d:${i * 0.05}s">
+        <div class="skill-row">
+          <div class="skill-head">
+            <span class="skill-icon-tile" aria-hidden="true">${icon}</span>
+            <h3 class="skill-title">${esc(s.group)}</h3>
           </div>
+          <div class="skill-tags">${tags}</div>
         </div>
-        <div class="cc-right">
-          <span class="cc-action">${r.action}</span>
-          <span class="cc-arrow">&nearr;</span>
-        </div>
-      </a>
-    `).join('');
+      </li>`;
+    }).join('');
   }
-}
 
-/* --------------------------------------------------------------------------
-   02 — EDUCATION
-   -------------------------------------------------------------------------- */
-function renderEducation(){
-  const html = portfolioData.education.map(item => `
-    <div class="edu-card reveal">
-      <div class="edu-logo-frame">
-        <img src="${getAssetUrl(item.image)}" alt="${item.institution} logo" loading="lazy" />
-      </div>
-      <div>
-        <div class="edu-tag">${item.tag}</div>
-        <h3 class="edu-inst">${item.institution}</h3>
-        <div class="edu-degree">${item.degree} &bull; <span style="color:var(--paper);">${item.department}</span></div>
-        <div class="edu-specs">
-          <div><div class="ek">STATUS</div><div class="ev">${item.status}</div></div>
-          <div><div class="ek">LOCATION</div><div class="ev">${item.location}</div></div>
-          <div><div class="ek">PERIOD</div><div class="ev">${item.year}</div></div>
-          <div><div class="ek">TELEMETRY</div><div class="ev">${item.hud}</div></div>
-        </div>
-        <p class="edu-desc">${item.description}</p>
-      </div>
-    </div>`).join('');
-  $('educationList').innerHTML = html;
-}
-
-/* --------------------------------------------------------------------------
-   03 — ORGANIZATIONS & LEADERSHIP TIMELINE
-   -------------------------------------------------------------------------- */
-function renderOrganizations(){
-  const html = portfolioData.organizations.map(org => {
-    const markHtml = org.image
-      ? `<div class="tl-mark"><img src="${getAssetUrl(org.image)}" alt="${org.name} emblem" loading="lazy" /></div>`
-      : `<div class="tl-mark tl-mark-monogram">
-           <span class="tmm-code">GO//SB</span>
-           <span class="tmm-label">STUDY BUDDY</span>
-         </div>`;
-
-    const bulletsHtml = org.bullets && org.bullets.length
-      ? `<ul class="tl-bullets">
-          ${org.bullets.map(b => `<li><span class="tl-bullet-caret">&bull;</span><span>${b}</span></li>`).join('')}
-        </ul>`
-      : '';
-
+  function certHTML(c, i) {
+    const meta = [c.badge, c.year].filter(Boolean).join(', ');
     return `
-    <div class="tl-item reveal">
-      <div class="tl-top">
-        <span class="tl-year">${org.year}</span>
-        <h3 class="tl-org">${org.name}</h3>
+      <button class="cert" type="button" data-open="cert" data-index="${i}" aria-label="Lihat ${esc(c.title)}, ${esc(c.org)}">
+        ${mediaHTML({ src: c.image, alt: `${c.title}, ${c.org}`, tag: 'span', cls: 'media--natural', parallax: false })}
+        <span class="cert-cap">
+          <span class="cert-title">${esc(c.title)}</span>
+          <span class="cert-org">${esc(c.org)}</span>
+          <span class="cert-meta">${esc(meta)}</span>
+        </span>
+      </button>`;
+  }
+
+  let certCols = 0;
+  function buildCerts(force) {
+    const w = window.innerWidth;
+    const n = w >= 1000 ? 3 : w >= 640 ? 2 : 1;
+    if (!force && n === certCols) return;
+    certCols = n;
+    const cols = Array.from({ length: n }, () => []);
+    D.certificates.forEach((c, i) => cols[i % n].push(certHTML(c, i)));
+    const speeds = n === 3 ? [0.05, -0.06, 0.1] : n === 2 ? [0.04, -0.05] : [0];
+    const host = $('#certCols');
+    host.style.setProperty('--cols', n);
+    host.innerHTML = cols.map((items, ci) =>
+      `<div class="cert-col"${n > 1 && !reduce ? ` data-speed="${speeds[ci]}"` : ''}>${items.join('')}</div>`
+    ).join('');
+    if (engineReady) { collect(); observeReveals(); }
+  }
+
+  function renderPortal() {
+    const p = D.portal;
+    const list = (o) => `<div><h4>${esc(o.title)}</h4><ul class="rows">${o.points.map((t, i) => `<li class="row" style="--d:${i * 0.06}s"><div style="padding:.7rem 0">${esc(t)}</div></li>`).join('')}</ul></div>`;
+    $('#portal').innerHTML = `
+      <div class="portal-main">
+        <h3 class="portal-title" data-split>${esc(p.title)}</h3>
+        <p class="portal-lead rise">${esc(p.lead)}</p>
+        <a class="btn rise" href="${esc(p.url)}" target="_blank" rel="noopener" style="--d:.1s">${esc(p.button)} ↗</a>
       </div>
-      <div class="tl-role">${org.position} &bull; <span style="color:var(--accent);">${org.tag}</span></div>
-      <div class="tl-body">
-        <div class="tl-desc">
-          <p class="tl-lead">${org.description}</p>
-          ${bulletsHtml}
-        </div>
-        ${markHtml}
-      </div>
-    </div>`;
-  }).join('');
-  $('orgsList').innerHTML = html;
-}
-
-/* --------------------------------------------------------------------------
-   04 — SELECTED PROJECTS (HERO SPREADS)
-   -------------------------------------------------------------------------- */
-function renderSelectedProjects(){
-  const selected = portfolioData.projects.filter(p => p.selected);
-  const html = selected.map((proj, i) => {
-    const n = pad2(i+1);
-    const flip = i % 2 === 1 ? 'flip' : '';
-    return `
-    <article class="project-spread ${flip}">
-      <span class="project-num" aria-hidden="true">${n}</span>
-      <div class="p-media reveal">
-        ${mediaFrame({
-          image: proj.image,
-          label: proj.name,
-          tag: proj.code || `PROJECT ${n}`,
-          hudTag: proj.hudTag,
-          zoomTitle: `${proj.name} — SCHEMATIC / BOARD VIEW`
-        })}
-      </div>
-      <div class="p-body reveal" style="--rd:.15s">
-        <div class="p-eyebrow">
-          <span class="p-eyebrow-left"><span class="dot"></span>PROJECT ${n} &bull; ${proj.category}</span>
-          <span class="p-category-badge">${proj.type.toUpperCase()}</span>
-        </div>
-        <div class="p-art-dir">${proj.artDirection}</div>
-        <h3 class="p-title">${proj.name}</h3>
-        <p class="p-desc">${proj.description}</p>
-        <div class="p-specs">
-          <div><div class="sk">ROLE</div><div class="sv">${proj.role}</div></div>
-          <div><div class="sk">TECHNOLOGY</div><div class="sv">${proj.tech}</div></div>
-          <div><div class="sk">YEAR</div><div class="sv">${proj.year}</div></div>
-          <div><div class="sk">STATUS</div><div class="sv">${proj.status}</div></div>
-        </div>
-        <div class="p-action">
-          <button class="inspect-btn" onclick="openLightbox('${getAssetUrl(proj.image)}', '${proj.name}', '${proj.hudTag} // ${proj.category}')">
-            INSPECT SPEC &bull; ZOOM &rarr;
-          </button>
-        </div>
-      </div>
-    </article>`;
-  }).join('');
-  $('projectsList').innerHTML = html;
-}
-
-/* --------------------------------------------------------------------------
-   REUSABLE ENGINEERING CARD GENERATOR (FOR IOT & PCB CATALOGS)
-   -------------------------------------------------------------------------- */
-function createEngineeringCard(proj, index, prefix){
-  const numLabel = `${prefix} // ${pad2(index+1)}`;
-  return `
-    <article class="eng-card reveal">
-      <div class="eng-card-header">
-        <span class="eng-card-num">${numLabel}</span>
-        <span class="eng-card-cat">${proj.category}</span>
-      </div>
-      <div class="eng-card-media">
-        ${mediaFrame({
-          image: proj.image,
-          label: proj.name,
-          tag: numLabel,
-          hudTag: proj.hudTag,
-          zoomTitle: `${proj.name} — FULL RESOLUTION VIEW`
-        })}
-      </div>
-      <div class="eng-card-body">
-        <div class="eng-card-art">${proj.artDirection}</div>
-        <h3 class="eng-card-title">${proj.name}</h3>
-        <p class="eng-card-desc">${proj.description}</p>
-        <div class="eng-card-specs">
-          <div><div class="sk">ROLE</div><div class="sv">${proj.role}</div></div>
-          <div><div class="sk">TECHNOLOGY</div><div class="sv">${proj.tech}</div></div>
-          <div><div class="sk">YEAR</div><div class="sv">${proj.year}</div></div>
-          <div><div class="sk">STATUS</div><div class="sv">${proj.status}</div></div>
-        </div>
-        <div class="eng-card-action">
-          <button class="inspect-btn" onclick="openLightbox('${getAssetUrl(proj.image)}', '${proj.name}', '${proj.hudTag} // ${proj.category}')">
-            INSPECT COMPONENT &rarr;
-          </button>
-        </div>
-      </div>
-    </article>`;
-}
-
-/* --------------------------------------------------------------------------
-   05 — IOT PROJECTS CATALOG (ALL 7 IOT ASSETS)
-   -------------------------------------------------------------------------- */
-function renderIotProjects(){
-  const iotProjects = portfolioData.projects.filter(p => p.type === 'iot');
-  const html = iotProjects.map((proj, i) => createEngineeringCard(proj, i, 'IOT')).join('');
-  $('iotList').innerHTML = html;
-}
-
-/* --------------------------------------------------------------------------
-   06 — PCB PROJECTS CATALOG (ALL 5 PCB ASSETS)
-   -------------------------------------------------------------------------- */
-function renderPcbProjects(){
-  const pcbProjects = portfolioData.projects.filter(p => p.type === 'pcb');
-  const html = pcbProjects.map((proj, i) => createEngineeringCard(proj, i, 'PCB')).join('');
-  $('pcbList').innerHTML = html;
-}
-
-/* --------------------------------------------------------------------------
-   07 — MAIN WEBSITE & OTHER WORKS PORTAL (aefera.me)
-   -------------------------------------------------------------------------- */
-function renderMainPortal(){
-  const portal = portfolioData.mainPortal;
-  const el = $('mainPortalContent');
-  if(!el || !portal) return;
-
-  const thisPointsHtml = (portal.thisSite?.points || []).map(pt => `
-    <li><span class="cb-dot">&bull;</span><span>${pt}</span></li>
-  `).join('');
-
-  const mainPointsHtml = (portal.mainSite?.points || []).map(pt => `
-    <li><span class="cb-arrow">&nearr;</span><span>${pt}</span></li>
-  `).join('');
-
-  el.innerHTML = `
-    <div class="portal-card reveal">
-      <div class="portal-header-row">
-        <div>
-          <div class="portal-tag">${portal.tag}</div>
-          <h3 class="portal-title">${portal.title}</h3>
-          <p class="portal-lead">${portal.lead}</p>
-          <p class="portal-desc">${portal.description}</p>
-        </div>
-        <div class="portal-domain-chip">
-          <span class="pd-sub">${portal.badge}</span>
-          <span class="pd-domain">${portal.domain}</span>
-          <div class="portal-hud-status">
-            <span class="hud-live-dot"></span>
-            <span>${portal.hud}</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="portal-compare-grid">
-        <!-- Box 1: This Current Website (Hardware Archive) -->
-        <div class="compare-box current-box">
-          <div class="cb-header">
-            <span class="cb-badge current-badge">${portal.thisSite?.badge || 'WEBSITE INI'}</span>
-            <h4 class="cb-title">${portal.thisSite?.title || 'Hardware Portfolio'}</h4>
-          </div>
-          <p class="cb-desc">${portal.thisSite?.desc || ''}</p>
-          <ul class="cb-list">
-            ${thisPointsHtml}
-          </ul>
-          <div class="cb-foot">
-            <span class="cb-foot-label">SCOPE:</span>
-            <span class="cb-foot-val">HARDWARE &bull; FIRMWARE &bull; PCB &bull; ROBOTICS</span>
-          </div>
-        </div>
-
-        <!-- Box 2: aefera.me (Main Site Hub) -->
-        <div class="compare-box main-box">
-          <div class="cb-header">
-            <span class="cb-badge main-badge">${portal.mainSite?.badge || 'WEBSITE UTAMA'}</span>
-            <h4 class="cb-title">${portal.mainSite?.title || 'aefera.me'}</h4>
-          </div>
-          <p class="cb-desc">${portal.mainSite?.desc || ''}</p>
-          <ul class="cb-list main-list">
-            ${mainPointsHtml}
-          </ul>
-          <div class="cb-action">
-            <a href="${portal.url}" target="_blank" rel="noopener" class="portal-cta-btn">
-              <span>${portal.buttonText}</span>
-              <span class="cta-arrow">&nearr;</span>
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-/* --------------------------------------------------------------------------
-   08 — TECHNICAL SKILLS (SPEC SHEET)
-   Renders balanced technical domains with authentic SVG logos
-   -------------------------------------------------------------------------- */
-function getSkillSvg(name){
-  const n = (name || '').toLowerCase();
-
-  // Python
-  if(n.includes('python')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#387EB8" d="M11.9 2c-3.1 0-2.9 1.3-2.9 1.3l.01 1.4h2.9v.4H6.2S4 4.8 4 8c0 3.2 1.9 3.1 1.9 3.1h1.1v-1.6s-.1-1.9 1.9-1.9h3.3s1.8.03 1.8-1.8V4s.2-2-2.1-2zm-1.7 1.1c.3 0 .6.3.6.6s-.3.6-.6.6-.6-.3-.6-.6.3-.6.6-.6z"/><path fill="#FFE052" d="M12.1 22c3.1 0 2.9-1.3 2.9-1.3l-.01-1.4h-2.9v-.4h5.7s2.2.3 2.2-2.9c0-3.2-1.9-3.1-1.9-3.1h-1.1v1.6s.1 1.9-1.9 1.9H11.8s-1.8-.03-1.8 1.8v1.8s-.2 2 2.1 2zm1.7-1.1c-.3 0-.6-.3-.6-.6s.3-.6.6-.6.6.3.6.6-.3.6-.6.6z"/></svg>`;
-  }
-  // C++
-  if(n.includes('c++')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#00599C" d="M12 2l9 5.2v10.4L12 23l-9-5.4V7.2L12 2z"/><path fill="#fff" d="M9.8 14.8c-.8 0-1.5-.3-2-.8-.5-.5-.8-1.2-.8-2s.3-1.5.8-2c.5-.5 1.2-.8 2-.8.6 0 1.2.2 1.6.6l-.6.7c-.3-.3-.7-.5-1-.5-.5 0-.9.2-1.2.5-.3.4-.5.8-.5 1.5 0 .6.2 1.1.5 1.5.3.3.7.5 1.2.5.4 0 .8-.2 1.1-.5l.6.7c-.5.4-1 .6-1.7.6zm3.5-2.3h-1.4v-.8h1.4v-1.4h.8v1.4h1.4v.8h-1.4v1.4h-.8v-1.4zm4 0h-1.4v-.8h1.4v-1.4h.8v1.4h1.4v.8h-1.4v1.4h-.8v-1.4z"/></svg>`;
-  }
-  // JavaScript
-  if(n.includes('javascript') || n === 'js') {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><rect width="24" height="24" rx="3" fill="#F7DF1E"/><path fill="#000" d="M12.5 17.5c0 1.3-.8 2-2 2-1.3 0-1.9-.8-2.3-1.5l1.3-.8c.2.4.5.8 1 .8.4 0 .7-.2.7-.6v-6.2h1.3v6.3zm6.6-.4c-.4.8-1.2 1.4-2.4 1.4-1.6 0-2.6-1.1-2.6-2.6 0-1.8 1.1-2.6 2.7-2.6.4 0 .8.1 1.1.2v-.4c0-.6-.4-1-1.2-1-.6 0-1.1.3-1.3.7l-1.1-.7c.5-.9 1.4-1.3 2.5-1.3 1.6 0 2.4.9 2.4 2.3v4zm-1.3-1.8c-.3-.1-.6-.2-1-.2-.8 0-1.3.4-1.3 1.2 0 .7.5 1.2 1.3 1.2.6 0 1-.3 1-.7v-1.5z"/></svg>`;
-  }
-  // HTML
-  if(n.includes('html')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#E34F26" d="M3 2l1.6 18.5L12 23l7.4-2.5L21 2H3z"/><path fill="#EF652A" d="M12 3.8v17.4l6-2 1.3-15.4H12z"/><path fill="#EDEAEA" d="M12 8.4H7.5l.3 3.4h4.2V8.4zm0 6.6H7.9l.2 2 3.9 1.1v-3.1z"/><path fill="#fff" d="M12 8.4v3.4h4.1l-.4 4.3-3.7 1v3.2l6-2 .9-9.9H12z"/></svg>`;
-  }
-  // CSS
-  if(n.includes('css')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#1572B6" d="M3 2l1.6 18.5L12 23l7.4-2.5L21 2H3z"/><path fill="#33A9DC" d="M12 3.8v17.4l6-2 1.3-15.4H12z"/><path fill="#EDEAEA" d="M12 8.4H7.5l.3 3.4h4.2V8.4zm0 6.6H7.9l.2 2 3.9 1.1v-3.1z"/><path fill="#fff" d="M12 8.4v3.4h4.1l-.4 4.3-3.7 1v3.2l6-2 .9-9.9H12z"/></svg>`;
-  }
-  // MATLAB
-  if(n.includes('matlab')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#E16726" d="M3 17.5c2.5-3 5-1 7.5-6.5C12 7 13.5 3 15 3c1.2 0 1.8 7 3.5 10 1.2 2.2 3.5 3 4.5 3-1 2-4 3.5-7 2.5-2.5-.8-3.5-3-5.5-3-1.8 0-3 1.5-4.5 2-1 .3-2 0-3-1z"/></svg>`;
-  }
-  // ESP32 & STM32
-  if(n.includes('esp32') || n.includes('stm32')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><rect x="4" y="4" width="16" height="16" rx="2" fill="#1c1a17" stroke="#FF5A1F" stroke-width="1.5"/><circle cx="7.5" cy="7.5" r="1" fill="#FF5A1F"/><path d="M4 8H1M4 12H1M4 16H1M20 8h3M20 12h3M20 16h3M8 4V1M12 4V1M16 4V1M8 20v3M12 20v3M16 20v3" stroke="#FF5A1F" stroke-width="1.3"/><rect x="8" y="8" width="8" height="8" rx="1" fill="#2d1c13" stroke="#ff7a3d" stroke-width="1"/></svg>`;
-  }
-  // Arduino
-  if(n.includes('arduino')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#00979D" d="M7 7a5 5 0 0 0-5 5 5 5 0 0 0 5 5c2.3 0 4.2-1.5 4.8-3.6.2-.8.2-1.7 0-2.5A5.02 5.02 0 0 0 7 7zm10 0a5.02 5.02 0 0 0-4.8 3.9c-.2.8-.2 1.7 0 2.5A5.02 5.02 0 0 0 17 17a5 5 0 0 0 5-5 5 5 0 0 0-5-5zM5 11h4v2H5v-2zm11 0h1V9h2v2h1v2h-1v2h-2v-2h-1v-2z"/></svg>`;
-  }
-  // KiCad
-  if(n.includes('kicad')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><rect width="24" height="24" rx="4" fill="#314CB0"/><path fill="#fff" d="M6 6h2.2v5.2L12 6h2.8l-4.5 5.8L15 18h-2.8l-3.2-5.4V18H6V6zm9.8 4.2c0-2.3 1.8-4.2 4.2-4.2s4.2 1.8 4.2 4.2-1.8 4.2-4.2 4.2-4.2-1.9-4.2-4.2zm6.2 0c0-1.1-.9-2-2-2s-2 .9-2 2 .9 2 2 2 2-.9 2-2z"/></svg>`;
-  }
-  // NRF24L01
-  if(n.includes('nrf24')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="none" stroke="#FF5A1F" stroke-width="1.6" stroke-linecap="round" d="M12 15a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm-4.9-5a7 7 0 0 0 0 6m9.8-6a7 7 0 0 1 0 6M4.2 7.1a11 11 0 0 0 0 9.8m15.6-9.8a11 11 0 0 1 0 9.8M12 15v6"/></svg>`;
-  }
-  // MPU6050 / IMU
-  if(n.includes('mpu6050') || n.includes('imu')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="9" fill="none" stroke="#29B6F6" stroke-width="1.5"/><path d="M12 3v18M3 12h18" stroke="#29B6F6" stroke-width="1.2" stroke-dasharray="2 2"/><circle cx="12" cy="12" r="3" fill="#0288D1"/><path d="M16 8l3-3m-3 0h3v3" stroke="#29B6F6" stroke-width="1.4" fill="none"/></svg>`;
-  }
-  // PIR & Ultrasonic
-  if(n.includes('pir') || n.includes('ultrasonic')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="none" stroke="#66BB6A" stroke-width="1.5" d="M4 12a8 8 0 0 1 16 0M7 12a5 5 0 0 1 10 0M10 12a2 2 0 0 1 4 0"/><circle cx="12" cy="16" r="2" fill="#66BB6A"/><path d="M12 18v4" stroke="#66BB6A" stroke-width="1.5"/></svg>`;
-  }
-  // pH, TDS, Turbidity
-  if(n.includes('ph') || n.includes('tds') || n.includes('turbidity')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#26C6DA" d="M12 2.7S6 9.5 6 14.5a6 6 0 0 0 12 0C18 9.5 12 2.7 12 2.7zm-2 13.8a3 3 0 0 1-2.8-3 .8.8 0 0 1 1.6 0 1.4 1.4 0 0 0 1.4 1.4.8.8 0 0 1 0 1.6z"/><path d="M10 8h4M9 11h6" stroke="#004D40" stroke-width="1.2"/></svg>`;
-  }
-  // OLED & Serial
-  if(n.includes('oled') || n.includes('serial')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><rect x="3" y="4" width="18" height="13" rx="2" fill="#141311" stroke="#FFA726" stroke-width="1.5"/><path d="M6 8h7M6 11h10M6 14h5" stroke="#FFA726" stroke-width="1.2" stroke-linecap="round"/><path d="M9 19h6M12 17v4" stroke="#FFA726" stroke-width="1.3"/></svg>`;
-  }
-  // NumPy
-  if(n.includes('numpy')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#4DABCF" d="M12 2L4 6.5v9L12 20l8-4.5v-9L12 2zm0 2.2l5.8 3.3L12 10.8 6.2 7.5 12 4.2zM5.5 8.7l5.7 3.3v6.5l-5.7-3.2V8.7zm7.3 9.8v-6.5l5.7-3.3v6.6l-5.7 3.2z"/></svg>`;
-  }
-  // Matplotlib
-  if(n.includes('matplotlib')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#11557C" d="M3 3v18h18v-2H5V3H3z"/><path fill="none" stroke="#FF5A1F" stroke-width="1.8" stroke-linecap="round" d="M6 16l4-7 4 5 5-9"/><circle cx="10" cy="9" r="1.8" fill="#FFE052"/><circle cx="14" cy="14" r="1.8" fill="#FFE052"/><circle cx="19" cy="5" r="1.8" fill="#FFE052"/></svg>`;
-  }
-  // pyqtgraph
-  if(n.includes('pyqtgraph')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><rect x="2" y="3" width="20" height="18" rx="2" fill="#0C1B23" stroke="#26A69A" stroke-width="1.4"/><path fill="none" stroke="#26A69A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 12h3l2-6 3 12 3-8 2 4h3"/></svg>`;
-  }
-  // Machine Learning
-  if(n.includes('machine learning')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><circle cx="5" cy="6" r="2.5" fill="#AB47BC"/><circle cx="5" cy="18" r="2.5" fill="#AB47BC"/><circle cx="12" cy="12" r="2.5" fill="#AB47BC"/><circle cx="19" cy="6" r="2.5" fill="#AB47BC"/><circle cx="19" cy="18" r="2.5" fill="#AB47BC"/><path d="M7 7l3.5 3.5m0 3L7 17M14 10.5L17 7m-3 6.5l3 3.5M7 6h10M7 18h10" stroke="#AB47BC" stroke-width="1.2" opacity=".6"/></svg>`;
-  }
-  // JSON Data Pipelines
-  if(n.includes('json')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#FFA726" d="M8 4c-1.1 0-2 .9-2 2v2c0 1.1-.9 2-2 2 1.1 0 2 .9 2 2v2c0 1.1.9 2 2 2h1v-2H8v-3c0-1.1-.9-2-2-2 1.1 0 2-.9 2-2V6h1V4H8zm8 0c1.1 0 2 .9 2 2v2c0 1.1.9 2 2 2-1.1 0-2 .9-2 2v2c0 1.1-.9 2-2 2h-1v-2h1v-3c0-1.1.9-2 2-2-1.1 0-2-.9-2-2V6h-1V4h1z"/><circle cx="12" cy="12" r="1.5" fill="#FFA726"/></svg>`;
-  }
-  // WiFi Protocols
-  if(n.includes('wifi')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#42A5F5" d="M12 18a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm0-6c3.2 0 6.2 1.3 8.3 3.4l-2.1 2.1a9 9 0 0 0-12.4 0L3.7 15.4A11.9 11.9 0 0 1 12 12zm0-6c5 0 9.7 2 13 5.4l-2.1 2.2a15.4 15.4 0 0 0-21.8 0L-1 11.4A18.4 18.4 0 0 1 12 6z"/></svg>`;
-  }
-  // RF Principles
-  if(n.includes('rf') || n.includes('principles')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="none" stroke="#FF7043" stroke-width="1.8" stroke-linecap="round" d="M2 12c2.5-7 5-7 7.5 0s5 7 7.5 0 5-7 7.5 0"/><line x1="2" y1="12" x2="22" y2="12" stroke="#6f6a61" stroke-width="1" stroke-dasharray="2 2"/></svg>`;
-  }
-  // Wireless Interference
-  if(n.includes('interference')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="9" fill="none" stroke="#EF5350" stroke-width="1.4"/><path d="M12 7l1.5 3.5 3.5 1-2.8 2.3.8 3.7-3-2-3 2 .8-3.7-2.8-2.3 3.5-1L12 7z" fill="#EF5350" opacity=".7"/><path d="M4 4l16 16" stroke="#EF5350" stroke-width="1.5"/></svg>`;
-  }
-  // Deauthentication
-  if(n.includes('deauth')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#E57373" d="M18 8h-1V6c0-2.8-2.2-5-5-5S7 3.2 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.7 1.3-3 3-3s3 1.3 3 3v2H9V6zm3 10c-.8 0-1.5-.7-1.5-1.5S11.2 13 12 13s1.5.7 1.5 1.5S12.8 16 12 16z"/><line x1="3" y1="3" x2="21" y2="21" stroke="#FF1744" stroke-width="2"/></svg>`;
-  }
-  // Evil Twin
-  if(n.includes('evil twin')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#D32F2F" d="M12 2L4 5v6.1c0 5 3.4 9.8 8 10.9 4.6-1.1 8-5.9 8-10.9V5l-8-3zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>`;
-  }
-  // OS Modification
-  if(n.includes('os modification')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#FFB74D" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54A.48.48 0 0 0 14 2h-4a.48.48 0 0 0-.49.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.63 8.47a.49.49 0 0 0 .12.61l2.03 1.58c-.05.3-.07.63-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.26.41.49.41h4c.24 0 .44-.17.49-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>`;
-  }
-  // System Installation
-  if(n.includes('installation')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#81C784" d="M19 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm-7 13l-4-4h2.5V9h3v4H16l-4 4zm6 2H6v-2h12v2z"/></svg>`;
-  }
-  // Shell CLI
-  if(n.includes('cli') || n.includes('shell')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><rect x="2" y="3" width="20" height="18" rx="2" fill="#141311" stroke="#4CAF50" stroke-width="1.5"/><path d="M6 8l4 4-4 4M12 16h6" stroke="#4CAF50" stroke-width="1.8" stroke-linecap="round"/></svg>`;
-  }
-  // Tkinter
-  if(n.includes('tkinter')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><rect x="3" y="3" width="18" height="18" rx="2" fill="#0E1726" stroke="#00B0FF" stroke-width="1.5"/><path d="M3 7h18M7 5.2h.01M9.5 5.2h.01M12 5.2h.01" stroke="#00B0FF" stroke-width="1.5"/><rect x="6" y="10" width="12" height="4" rx="1" fill="#00B0FF" opacity=".3"/></svg>`;
-  }
-  // PyQt5
-  if(n.includes('pyqt')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><rect width="24" height="24" rx="3" fill="#41CD52"/><text x="3" y="17" fill="#fff" font-family="'Inter', sans-serif" font-weight="800" font-size="13">Qt5</text></svg>`;
-  }
-  // QR Code / Barcode
-  if(n.includes('qr') || n.includes('barcode')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><rect x="3" y="3" width="7" height="7" fill="none" stroke="#ECE7DC" stroke-width="1.5"/><rect x="5" y="5" width="3" height="3" fill="#ECE7DC"/><rect x="14" y="3" width="7" height="7" fill="none" stroke="#ECE7DC" stroke-width="1.5"/><rect x="16" y="5" width="3" height="3" fill="#ECE7DC"/><rect x="3" y="14" width="7" height="7" fill="none" stroke="#ECE7DC" stroke-width="1.5"/><rect x="5" y="16" width="3" height="3" fill="#ECE7DC"/><path d="M14 14h3v3h-3zm4 0h3v3h-3zm-4 4h3v3h-3zm4 0h3v3h-3z" fill="#ECE7DC"/></svg>`;
-  }
-  // Git
-  if(n.includes('git ') || n.includes('git version')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#F05032" d="M21.7 10.7l-8.4-8.4a2 2 0 0 0-2.8 0L8.6 4.2l3.4 3.4a2.4 2.4 0 0 1 3.1 3.1l3.3 3.3a2.4 2.4 0 1 1-1.4 1.4L15.3 12a2.4 2.4 0 0 1-2.3-1.6L9.6 7 2.3 14.3a2 2 0 0 0 0 2.8l8.4 8.4a2 2 0 0 0 2.8 0l8.2-8.2a2 2 0 0 0 0-2.8v-.2z"/></svg>`;
-  }
-  // GitHub
-  if(n.includes('github')) {
-    return `<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#ECE7DC" fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>`;
+      <div class="portal-lists">${list(p.here)}${list(p.main)}</div>`;
   }
 
-  // Fallback icon
-  return `<svg viewBox="0 0 24 24" width="18" height="18"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5" fill="none" stroke="#FF5A1F" stroke-width="1.5"/><circle cx="12" cy="12" r="2.5" fill="#FF5A1F"/></svg>`;
-}
+  function renderContact() {
+    const c = D.contact;
+    const allLinks = [
+      { label: "WhatsApp", value: c.whatsapp, url: c.whatsappUrl },
+      ...c.links.filter(l => !/whatsapp/i.test(l.label))
+    ];
 
-function renderSkills(){
-  const cats = Object.entries(portfolioData.skills);
-  const html = cats.map(([cat, list], idx) => `
-    <div class="spec-col reveal">
-      <div class="sc-head">
-        <div class="sc-head-title">DOMAIN // ${pad2(idx + 1)} &bull; ${cat}</div>
-        <span class="sc-head-badge">${pad2(list.length)} SPECS</span>
-      </div>
-      <ul>
-        ${list.map(s => `
-          <li>
-            <div class="skill-badge">
-              <div class="sb-icon">${getSkillSvg(s)}</div>
-              <span class="sb-name">${s}</span>
-            </div>
-          </li>
-        `).join('')}
-      </ul>
-    </div>`).join('');
-  $('skillsSheet').innerHTML = html;
-}
-
-/* --------------------------------------------------------------------------
-   08 — CERTIFICATES SHOWCASE
-   -------------------------------------------------------------------------- */
-function renderAchievements(){
-  const certContainer = $('certificatesGallery') || $('achievementsGrid');
-  if(!certContainer) return;
-
-  const certs = portfolioData.certificates || [];
-  const html = certs.map((c, i) => {
-    const idx = String(i + 1).padStart(2, '0');
-    const pdfBtn = c.pdf 
-      ? `<a href="${encodeURI(c.pdf)}" target="_blank" rel="noopener" class="cert-pdf-badge" title="Buka Dokumen PDF Asli" onclick="event.stopPropagation()">PDF ↗</a>` 
-      : '';
-    return `
-      <div class="cert-card reveal" style="--rd:${(i * 0.08).toFixed(2)}s">
-        <div class="cert-frame media-frame tilt" data-zoom-src="${encodeURI(c.image)}" data-zoom-title="${c.title}">
-          <div class="cert-header">
-            <div class="cert-header-left">
-              <span class="hud-live-dot"></span>
-              <span class="cert-num">CERT // ${idx}</span>
-            </div>
-            <div class="cert-header-right">
-              ${c.badge ? `<span class="cert-tag">${c.badge}</span>` : ''}
-              ${pdfBtn}
-            </div>
-          </div>
-          <div class="cert-image-wrap aspect-${c.aspect || 'landscape'}">
-            <img src="${encodeURI(c.image)}" alt="${c.title}" loading="lazy" />
-            <div class="cert-vignette"></div>
-            <div class="cert-hover-hint">
-              <span class="cert-hint-btn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
-                ZOOM
-              </span>
-            </div>
-          </div>
-          <span class="mf-c1"></span><span class="mf-c2"></span>
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  certContainer.innerHTML = html;
-}
-
-/* --------------------------------------------------------------------------
-   NAVIGATION & OBSERVERS
-   -------------------------------------------------------------------------- */
-const SECTIONS = [
-  { id: 'hero', label: 'COVER' },
-  { id: 'profile', label: 'PROFILE' },
-  { id: 'education', label: 'EDUCATION' },
-  { id: 'organizations', label: 'ORGANIZATIONS' },
-  { id: 'projects', label: 'SELECTED' },
-  { id: 'iot', label: 'IOT PROJECTS' },
-  { id: 'pcb', label: 'PCB PROJECTS' },
-  { id: 'portal', label: 'AEFERA.ME' },
-  { id: 'skills', label: 'SPEC SHEET' },
-  { id: 'achievements', label: 'CERTIFICATES' },
-  { id: 'contact', label: 'CONTACT' }
-];
-
-function renderSideNav(){
-  const sn = $('sideNav');
-  if(sn){
-    sn.innerHTML = SECTIONS.map((s,i) => `
-      <a href="#${s.id}" data-id="${s.id}" aria-label="Navigate to ${s.label}">
-        <span class="nav-label">${pad2(i)} — ${s.label}</span>
-        <span class="nav-dot"></span>
-      </a>`).join('');
-  }
-
-  // Populate Mobile Navigation Drawer
-  const mList = $('mobileNavList');
-  if(mList){
-    mList.innerHTML = SECTIONS.map((s, i) => `
-      <li>
-        <a href="#${s.id}" class="mnd-link" data-id="${s.id}">
-          <span class="mnd-num">${pad2(i)}</span>
-          <span class="mnd-label">${s.label}</span>
-          <span class="mnd-indicator"></span>
+    $('#contactList').innerHTML = allLinks.map((l, i) => {
+      const icon = getContactIcon(l.label);
+      return `
+      <li class="row" style="--d:${i * 0.06}s">
+        <a href="${esc(l.url)}" target="_blank" rel="noopener">
+          <span class="c-lead">
+            <span class="c-icon" aria-hidden="true">${icon}</span>
+            <span class="c-label">${esc(l.label)}</span>
+          </span>
+          <span class="c-value">${esc(l.value)}</span>
+          <span class="c-out" aria-hidden="true">↗</span>
         </a>
-      </li>
-    `).join('');
+      </li>`;
+    }).join('');
+    $('#footCopy').textContent = `© ${D.profile.year} ${D.profile.name}`;
   }
 
-  // Mobile Drawer Toggle logic
-  const toggleBtn = $('mobileNavToggle');
-  const closeBtn = $('mobileNavClose');
-  const drawer = $('mobileNavDrawer');
-  
-  function openMobileNav(){
-    if(drawer) {
-      drawer.classList.add('is-open', 'open');
-      drawer.setAttribute('aria-hidden', 'false');
-      document.body.style.overflow = 'hidden';
-    }
-  }
-  function closeMobileNav(){
-    if(drawer) {
-      drawer.classList.remove('is-open', 'open');
-      drawer.setAttribute('aria-hidden', 'true');
-      document.body.style.overflow = '';
-    }
-  }
-
-  if(toggleBtn) toggleBtn.addEventListener('click', openMobileNav);
-  if(closeBtn) closeBtn.addEventListener('click', closeMobileNav);
-
-  if(mList){
-    mList.querySelectorAll('a').forEach(a => {
-      a.addEventListener('click', closeMobileNav);
-    });
-  }
-
-  document.addEventListener('keydown', (e) => {
-    if(e.key === 'Escape') closeMobileNav();
-  });
-}
-
-function initSectionObserver(){
-  const navLinks = document.querySelectorAll('.side-nav a');
-  const mndLinks = document.querySelectorAll('.mnd-link');
-  const counter = $('frameCounter');
-  const mHudLabel = $('mobileHudLabel');
-  const mHudCounter = $('mobileHudCounter');
-
-  const obs = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if(entry.isIntersecting){
-        const idx = SECTIONS.findIndex(s => s.id === entry.target.id);
-        if(idx >= 0){
-          const sec = SECTIONS[idx];
-          navLinks.forEach(l => l.classList.remove('active'));
-          mndLinks.forEach(l => l.classList.remove('active'));
-
-          const link = document.querySelector(`.side-nav a[data-id="${entry.target.id}"]`);
-          if(link) link.classList.add('active');
-
-          const mLink = document.querySelector(`.mnd-link[data-id="${entry.target.id}"]`);
-          if(mLink) mLink.classList.add('active');
-
-          if(counter) counter.textContent = pad2(idx);
-          if(mHudLabel) mHudLabel.textContent = `${pad2(idx)} // ${sec.label}`;
-          if(mHudCounter) mHudCounter.textContent = `${pad2(idx)} / 10`;
-        }
-      }
-    });
-  }, { rootMargin: '-15% 0px -55% 0px', threshold: 0 });
-  SECTIONS.forEach(s => { const el = $(s.id); if(el) obs.observe(el); });
-}
-
-function initRevealObserver(){
-  const els = document.querySelectorAll('.reveal');
-  els.forEach((el, i) => {
-    if(!el.style.getPropertyValue('--rd')) {
-      el.style.setProperty('--rd', (Math.min(i % 4, 3) * 0.08) + 's');
-    }
-  });
-  const io = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if(entry.isIntersecting){
-        entry.target.classList.add('is-visible');
-        io.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.1, rootMargin: '0px 0px -4% 0px' });
-  els.forEach(el => io.observe(el));
-}
-
-function initParallax(reduceMotion){
-  if(reduceMotion) return;
-  const els = document.querySelectorAll('[data-parallax]');
-  if(!els.length) return;
-  let ticking = false;
-  function update(){
-    const scrollY = window.scrollY;
-    els.forEach(el => {
-      const speed = parseFloat(el.dataset.parallax) || 0.08;
-      el.style.transform = `translate3d(0, ${scrollY * speed * -1}px, 0)`;
-    });
-    ticking = false;
-  }
-  window.addEventListener('scroll', () => {
-    if(!ticking){ requestAnimationFrame(update); ticking = true; }
-  }, { passive: true });
-}
-
-function initTilt(reduceMotion){
-  if(reduceMotion) return;
-  document.querySelectorAll('.media-frame.tilt').forEach(el => {
-    el.addEventListener('mousemove', (e) => {
-      const r = el.getBoundingClientRect();
-      const x = (e.clientX - r.left) / r.width - 0.5;
-      const y = (e.clientY - r.top) / r.height - 0.5;
-      el.style.transform = `perspective(900px) rotateY(${x*4.5}deg) rotateX(${-y*4.5}deg)`;
-    });
-    el.addEventListener('mouseleave', () => { el.style.transform = ''; });
-  });
-}
-
-/* --------------------------------------------------------------------------
-   LIGHTBOX INSPECTION ENGINE
-   -------------------------------------------------------------------------- */
-let allProjectImages = [];
-let currentLightboxIdx = 0;
-
-function initLightbox(){
-  allProjectImages = portfolioData.projects.map(p => ({
-    src: getAssetUrl(p.image),
-    title: p.name,
-    tag: `${p.code || ''} &bull; ${p.category} &bull; ${p.hudTag}`
-  }));
-
-  const lb = $('lightbox');
-  const closeBtn = $('lightboxClose');
-  const prevBtn = $('lightboxPrev');
-  const nextBtn = $('lightboxNext');
-
-  closeBtn.addEventListener('click', closeLightbox);
-  prevBtn.addEventListener('click', prevLightbox);
-  nextBtn.addEventListener('click', nextLightbox);
-
-  lb.addEventListener('click', (e) => {
-    if(e.target === lb || e.target.classList.contains('lightbox-content')){
-      closeLightbox();
-    }
-  });
-
-  window.addEventListener('keydown', (e) => {
-    if(!lb.classList.contains('is-open')) return;
-    if(e.key === 'Escape') closeLightbox();
-    if(e.key === 'ArrowLeft') prevLightbox();
-    if(e.key === 'ArrowRight') nextLightbox();
-  });
-
-  // Delegate click on any media frame with data-zoom-src
-  document.addEventListener('click', (e) => {
-    const frame = e.target.closest('.media-frame[data-zoom-src]');
-    if(frame){
-      const src = frame.getAttribute('data-zoom-src');
-      const title = frame.getAttribute('data-zoom-title') || 'COMPONENT INSPECTION';
-      openLightbox(src, title, 'TELEMETRY HARDWARE INSPECT');
-    }
-  });
-}
-
-function openLightbox(src, title, tag){
-  const lb = $('lightbox');
-  const img = $('lightboxImg');
-  const tEl = $('lightboxTitle');
-  const tagEl = $('lightboxTag');
-
-  const idx = allProjectImages.findIndex(item => item.src === src);
-  if(idx >= 0) currentLightboxIdx = idx;
-
-  img.src = src;
-  tEl.textContent = title || 'COMPONENT INSPECTION';
-  tagEl.innerHTML = tag || 'TELEMETRY HARDWARE INSPECTION';
-  lb.classList.add('is-open');
-  lb.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeLightbox(){
-  const lb = $('lightbox');
-  lb.classList.remove('is-open');
-  lb.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
-}
-
-function updateLightboxIndex(idx){
-  if(!allProjectImages.length) return;
-  currentLightboxIdx = (idx + allProjectImages.length) % allProjectImages.length;
-  const item = allProjectImages[currentLightboxIdx];
-  $('lightboxImg').src = item.src;
-  $('lightboxTitle').textContent = item.title;
-  $('lightboxTag').innerHTML = item.tag;
-}
-
-function prevLightbox(){ updateLightboxIndex(currentLightboxIdx - 1); }
-function nextLightbox(){ updateLightboxIndex(currentLightboxIdx + 1); }
-
-function initLoader(){
-  window.addEventListener('load', () => {
-    setTimeout(() => document.body.classList.add('loaded'), 500);
-  });
-  setTimeout(() => document.body.classList.add('loaded'), 1800);
-}
-
-/* --------------------------------------------------------------------------
-   ROBOTICS WORKSHOP ATMOSPHERE & INDUSTRIAL EMBER ENGINE
-   Subtle welding sparks, heat haze, rising embers, and atmospheric dust
-   -------------------------------------------------------------------------- */
-function initWorkshopAtmosphere(reduceMotion){
-  const canvas = $('workshopAtmosphere');
-  if(!canvas) return;
-  const ctx = canvas.getContext('2d');
-  if(!ctx) return;
-
-  let width, height;
-  let animId = null;
-  let isRunning = true;
-
-  function resize(){
-    width = canvas.width = window.innerWidth;
-    height = canvas.height = window.innerHeight;
-  }
-  resize();
-  window.addEventListener('resize', resize, { passive: true });
-
-  if(reduceMotion){
-    const grad = ctx.createRadialGradient(width * 0.75, height * 0.35, 10, width * 0.75, height * 0.35, width * 0.6);
-    grad.addColorStop(0, 'rgba(255, 90, 31, 0.04)');
-    grad.addColorStop(1, 'transparent');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, width, height);
-    return;
-  }
-
-  const isMobile = window.innerWidth < 768;
-  const emberCount = isMobile ? 16 : 28;
-  const dustCount = isMobile ? 10 : 20;
-
-  const emberColors = [
-    '255, 90, 31',   // Signal Orange
-    '255, 133, 51',  // Hot Ember
-    '217, 119, 54',  // Molten Copper
-    '255, 205, 120'  // Electric Arc Spark
+  const SECTION_LINKS = [
+    ['beranda', 'Beranda'], ['tentang', 'Tentang'], ['pengalaman', 'Pengalaman'], ['proyek', 'Proyek'],
+    ['keahlian', 'Keahlian'], ['sertifikat', 'Sertifikat'], ['situs', 'Situs lain'], ['kontak', 'Kontak']
   ];
+  function renderMenu() {
+    $('#menuList').innerHTML = SECTION_LINKS.map(([id, label], i) =>
+      `<li><a href="#${id}" data-nav data-id="${id}"><span class="mi"><span class="mi-in" style="--i:${i}">${label}</span></span></a></li>`
+    ).join('');
+  }
 
-  class Ember {
-    constructor(){ this.reset(true); }
-    reset(initial = false){
-      this.x = Math.random() * width;
-      this.y = initial ? Math.random() * height : height + 10 + Math.random() * 20;
-      this.size = 1 + Math.random() * 1.6;
-      this.vx = (Math.random() - 0.5) * 0.45;
-      this.vy = -(0.55 + Math.random() * 1.15);
-      this.color = emberColors[Math.floor(Math.random() * emberColors.length)];
-      this.alpha = 0;
-      this.maxAlpha = 0.28 + Math.random() * 0.45;
-      this.life = 0;
-      this.maxLife = 160 + Math.random() * 220;
-      this.wobbleSpeed = 0.02 + Math.random() * 0.035;
-      this.wobbleAmp = 0.35 + Math.random() * 0.75;
-    }
-    update(){
-      this.life++;
-      this.x += this.vx + Math.sin(this.life * this.wobbleSpeed) * this.wobbleAmp;
-      this.y += this.vy;
+  /* ------------------------------------------------------------------ */
+  /* 2. Engine scroll                                                   */
+  /* ------------------------------------------------------------------ */
+  const items = [];
+  let vh = window.innerHeight;
+  let docH = 0;
+  let sy = window.scrollY;
+  let rafId = null;
+  let heroLines = [];
+  let heroFigure = null;
+  let stmt = { el: null, words: [], top: 0, h: 0 };
+  const progressEl = $('#progress');
 
-      if(this.life < 35){
-        this.alpha = (this.life / 35) * this.maxAlpha;
-      } else if(this.life > this.maxLife - 45){
-        this.alpha = ((this.maxLife - this.life) / 45) * this.maxAlpha;
+  function pageTop(el) { let y = 0; while (el) { y += el.offsetTop; el = el.offsetParent; } return y; }
+
+  function collect() {
+    items.length = 0;
+    $$('[data-speed]').forEach((el) => items.push({ el, type: 'speed', s: parseFloat(el.dataset.speed) || 0, frame: el }));
+    $$('[data-img-parallax]').forEach((img) => {
+      const frame = img.closest('.media');
+      if (frame) items.push({ el: img, type: 'img', s: parseFloat(img.dataset.imgParallax) || 0.09, frame });
+    });
+    heroLines = $$('.hero-name .line');
+    heroFigure = $('#heroFigure');
+    stmt.el = $('#statement');
+    stmt.words = stmt.el ? $$('.sw', stmt.el) : [];
+    measure();
+  }
+
+  function measure() {
+    vh = window.innerHeight;
+    docH = document.documentElement.scrollHeight;
+    items.forEach((it) => { it.top = pageTop(it.frame); it.h = it.frame.offsetHeight; });
+    if (stmt.el) { stmt.top = pageTop(stmt.el); stmt.h = stmt.el.offsetHeight; }
+    request();
+  }
+
+  function update() {
+    if (progressEl) progressEl.style.transform = `scaleX(${clamp(sy / Math.max(1, docH - vh), 0, 1).toFixed(4)})`;
+    if (reduce) return;
+
+    const mid = sy + vh / 2;
+    for (const it of items) {
+      if (it.top + it.h < sy - vh * 0.6 || it.top > sy + vh * 1.6) continue;
+      const center = it.top + it.h / 2;
+      let y;
+      if (it.type === 'speed') {
+        y = -(center - mid) * it.s;
       } else {
-        this.alpha = this.maxAlpha;
+        const p = clamp((center - mid) / (vh / 2 + it.h / 2), -1, 1);
+        y = -p * it.s * it.h;
       }
-
-      if(this.y < -20 || this.life >= this.maxLife || this.x < -20 || this.x > width + 20){
-        this.reset();
-      }
+      it.el.style.transform = `translate3d(0,${y.toFixed(1)}px,0)`;
     }
-    draw(ctx){
-      if(this.alpha <= 0.01) return;
-      ctx.save();
-      const trailX = this.x - this.vx * 3.2;
-      const trailY = this.y - this.vy * 3.2;
-      ctx.beginPath();
-      ctx.moveTo(trailX, trailY);
-      ctx.lineTo(this.x, this.y);
-      ctx.strokeStyle = `rgba(${this.color}, ${this.alpha * 0.55})`;
-      ctx.lineWidth = this.size * 0.7;
-      ctx.lineCap = 'round';
-      ctx.stroke();
 
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${this.color}, ${this.alpha})`;
-      ctx.shadowColor = `rgba(${this.color}, 0.75)`;
-      ctx.shadowBlur = 6;
-      ctx.fill();
-      ctx.restore();
+    if (sy < vh * 1.3) {
+      heroLines.forEach((l) => { l.style.transform = `translate3d(${(sy * 0.16 * l.dataset.dir).toFixed(1)}px,0,0)`; });
+      if (heroFigure) heroFigure.style.transform = `translate3d(0,${(sy * 0.17).toFixed(1)}px,0)`;
+    }
+
+    if (stmt.words.length) {
+      const start = stmt.top - vh * 0.85;
+      const end = stmt.top + stmt.h - vh * 0.45;
+      const p = clamp((sy - start) / Math.max(1, end - start), 0, 1);
+      const n = stmt.words.length;
+      for (let i = 0; i < n; i++) {
+        const v = clamp((p * (n + 2) - i) / 2, 0, 1);
+        stmt.words[i].style.opacity = (0.16 + 0.84 * v).toFixed(3);
+      }
     }
   }
 
-  class Dust {
-    constructor(){ this.reset(true); }
-    reset(initial = false){
-      this.x = Math.random() * width;
-      this.y = initial ? Math.random() * height : height + 10;
-      this.size = 0.6 + Math.random() * 1.0;
-      this.vx = (Math.random() - 0.5) * 0.22;
-      this.vy = -(0.15 + Math.random() * 0.3);
-      this.alpha = 0;
-      this.maxAlpha = 0.06 + Math.random() * 0.12;
-      this.life = 0;
-      this.maxLife = 260 + Math.random() * 260;
-    }
-    update(){
-      this.life++;
-      this.x += this.vx;
-      this.y += this.vy;
-      if(this.life < 40){
-        this.alpha = (this.life / 40) * this.maxAlpha;
-      } else if(this.life > this.maxLife - 50){
-        this.alpha = ((this.maxLife - this.life) / 50) * this.maxAlpha;
-      }
-      if(this.y < -10 || this.life >= this.maxLife){
-        this.reset();
-      }
-    }
-    draw(ctx){
-      if(this.alpha <= 0.01) return;
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(236, 231, 220, ${this.alpha})`;
-      ctx.fill();
-    }
+  function frame() {
+    rafId = null;
+    const target = window.scrollY;
+    sy += (target - sy) * (reduce ? 1 : 0.1);
+    if (Math.abs(target - sy) < 0.05) sy = target;
+    update();
+    if (sy !== target) rafId = requestAnimationFrame(frame);
+  }
+  function request() { if (!rafId) rafId = requestAnimationFrame(frame); }
+
+  /* ------------------------------------------------------------------ */
+  /* 3. Reveal, tema, header, menu                                      */
+  /* ------------------------------------------------------------------ */
+  let revealIO = null;
+  const seen = new WeakSet();
+
+  function splitWords(el) {
+    const txt = el.textContent.trim();
+    el.setAttribute('aria-label', txt);
+    el.innerHTML = txt.split(/\s+/).map((w, i) => `<span class="w" aria-hidden="true"><span class="wi" style="--i:${i}">${esc(w)}</span></span>`).join(' ');
+    el.dataset.done = '1';
   }
 
-  const embers = Array.from({ length: emberCount }, () => new Ember());
-  const dusts = Array.from({ length: dustCount }, () => new Dust());
-
-  function loop(){
-    if(!isRunning) return;
-    ctx.clearRect(0, 0, width, height);
-
-    dusts.forEach(d => { d.update(); d.draw(ctx); });
-    embers.forEach(e => { e.update(); e.draw(ctx); });
-
-    animId = requestAnimationFrame(loop);
-  }
-  loop();
-
-  document.addEventListener('visibilitychange', () => {
-    if(document.hidden){
-      isRunning = false;
-      if(animId) cancelAnimationFrame(animId);
-    } else {
-      isRunning = true;
-      loop();
+  function observeReveals() {
+    if (!revealIO) {
+      revealIO = new IntersectionObserver((entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) { e.target.classList.add('in'); revealIO.unobserve(e.target); }
+        });
+      }, { threshold: 0.01, rootMargin: '0px 0px -2% 0px' });
     }
-  });
-}
+    $$('[data-split]:not([data-done])').forEach(splitWords);
+    $$('[data-split], .media, .row, .rise').forEach((el) => {
+      if (el.closest('.hero') || seen.has(el) || el.classList.contains('in')) return;
+      seen.add(el);
+      revealIO.observe(el);
+    });
+  }
 
-/* --------------------------------------------------------------------------
-   SYSTEM INITIALIZATION
-   -------------------------------------------------------------------------- */
-function init(){
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function initTheme() {
+    const label = $('#hdLabel');
+    const menuLinks = $$('#menuList a');
+    let current = '';
+    const setLabel = (t) => {
+      if (label.textContent === t) return;
+      label.classList.add('out');
+      setTimeout(() => { label.textContent = t; label.classList.remove('out'); }, 220);
+    };
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (!e.isIntersecting) return;
+        const el = e.target;
+        document.body.dataset.bg = el.dataset.bg || 'light';
+        if (el.id !== current) {
+          current = el.id;
+          setLabel(el.dataset.label || '');
+          menuLinks.forEach((a) => a.setAttribute('aria-current', a.dataset.id === current ? 'true' : 'false'));
+        }
+      });
+    }, { rootMargin: '-50% 0px -50% 0px' });
+    $$('[data-bg]').forEach((el) => { if (el.tagName === 'SECTION') io.observe(el); });
+  }
 
-  renderSideNav();
-  renderFixedFields();
-  renderEducation();
-  renderOrganizations();
-  renderSelectedProjects();
-  renderIotProjects();
-  renderPcbProjects();
-  renderMainPortal();
-  renderSkills();
-  renderAchievements();
+  function initHeader() {
+    const header = $('#header');
+    let lastY = window.scrollY;
+    window.addEventListener('scroll', () => {
+      const y = window.scrollY;
+      if (document.body.classList.contains('menu-open')) { lastY = y; return; }
+      if (y > lastY + 6 && y > 140) header.classList.add('is-hidden');
+      else if (y < lastY - 6 || y < 140) header.classList.remove('is-hidden');
+      lastY = y;
+      request();
+      observeReveals();
+    }, { passive: true });
+  }
 
-  initSectionObserver();
-  initRevealObserver();
-  initParallax(reduceMotion);
-  initTilt(reduceMotion);
-  initLightbox();
-  initWorkshopAtmosphere(reduceMotion);
-  initLoader();
-}
+  const menu = $('#menu');
+  const menuBtn = $('#menuBtn');
+  function setMenu(open) {
+    document.body.classList.toggle('menu-open', open);
+    document.body.classList.toggle('no-scroll', open);
+    menu.classList.toggle('open', open);
+    menu.inert = !open;
+    menu.setAttribute('aria-hidden', String(!open));
+    menuBtn.setAttribute('aria-expanded', String(open));
+    $('#menuBtnText').textContent = open ? 'Tutup' : 'Menu';
+    if (open) $('#header').classList.remove('is-hidden');
+  }
 
-document.addEventListener('DOMContentLoaded', init);
+  function goTo(id) {
+    const target = document.getElementById(id);
+    if (!target) return;
+    target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* 4. Viewer, preview hover, filter                                   */
+  /* ------------------------------------------------------------------ */
+  const viewer = $('#viewer');
+  const vImg = $('#viewerImg');
+  const V = { kind: 'project', list: D.projects, i: 0, opener: null };
+
+  function renderViewer() {
+    const it = V.list[V.i];
+    const isProject = V.kind === 'project';
+    vImg.classList.remove('ready');
+    vImg.onload = vImg.onerror = () => vImg.classList.add('ready');
+    vImg.src = asset(it.image);
+    vImg.alt = isProject ? it.name : `${it.title}, ${it.org}`;
+    vImg.style.objectFit = (isProject && it.fit) || 'contain';
+    if (vImg.complete && vImg.naturalWidth) vImg.classList.add('ready');
+
+    $('#viewerInfo').innerHTML = isProject
+      ? `<p class="v-kind">${esc(it.area)}</p>
+         <h2 class="v-title" id="viewerTitle">${esc(it.name)}</h2>
+         <p class="v-text">${esc(it.description)}</p>
+         <dl class="v-meta">
+           <div><dt>Peran</dt><dd>${esc(it.role)}</dd></div>
+           <div><dt>Teknologi</dt><dd>${esc(it.tech)}</dd></div>
+           <div><dt>Tahun</dt><dd>${esc(it.year)}</dd></div>
+           <div><dt>Status</dt><dd>${esc(it.status)}</dd></div>
+           <div><dt>Tim</dt><dd>Individu</dd></div>
+         </dl>`
+      : `<p class="v-kind">${esc([it.badge, it.year].filter(Boolean).join(', '))}</p>
+         <h2 class="v-title" id="viewerTitle">${esc(it.title)}</h2>
+         <p class="v-text">${esc(it.org)}</p>
+         ${it.pdf ? `<a class="v-link link" href="${esc(asset(it.pdf))}" target="_blank" rel="noopener">Buka PDF ↗</a>` : ''}`;
+    $('#viewerCount').textContent = `${V.i + 1} / ${V.list.length}`;
+    $('#viewerInfo').scrollTop = 0;
+  }
+
+  function openViewer(kind, index, opener) {
+    V.kind = kind;
+    V.list = kind === 'project' ? D.projects : D.certificates;
+    V.i = clamp(index, 0, V.list.length - 1);
+    V.opener = opener || document.activeElement;
+    renderViewer();
+    viewer.inert = false;
+    viewer.setAttribute('aria-hidden', 'false');
+    viewer.classList.add('open');
+    document.body.classList.add('no-scroll');
+    setTimeout(() => $('#viewerClose').focus(), 60);
+  }
+  function closeViewer() {
+    viewer.classList.remove('open');
+    viewer.inert = true;
+    viewer.setAttribute('aria-hidden', 'true');
+    if (!document.body.classList.contains('menu-open')) document.body.classList.remove('no-scroll');
+    if (V.opener && V.opener.focus) V.opener.focus({ preventScroll: true });
+  }
+  function stepViewer(d) {
+    V.i = (V.i + d + V.list.length) % V.list.length;
+    renderViewer();
+  }
+
+  function initPeek() {
+    if (!canHover || reduce) return;
+    const peek = $('#peek');
+    const pimg = $('img', peek);
+    const host = $('#indexList');
+    const hint = $('.index-hint');
+    let x = 0, y = 0, cx = 0, cy = 0, rot = 0, on = false, raf = null, currentId = '';
+    let hintHidden = false;
+
+    function loop() {
+      cx = lerp(cx, x, 0.14);
+      cy = lerp(cy, y, 0.14);
+      rot = lerp(rot, clamp((x - cx) * 0.05, -8, 8), 0.2);
+      peek.style.transform = `translate3d(${cx.toFixed(1)}px,${cy.toFixed(1)}px,0) translate(-50%,-50%) rotate(${rot.toFixed(2)}deg)`;
+      raf = on || Math.abs(x - cx) > 0.5 || Math.abs(y - cy) > 0.5 ? requestAnimationFrame(loop) : null;
+    }
+
+    host.addEventListener('mouseover', (e) => {
+      const btn = e.target.closest('.row-btn');
+      if (!btn) return;
+      if (!on) { cx = x; cy = y; }
+      on = true;
+      if (btn.dataset.id !== currentId) {
+        currentId = btn.dataset.id;
+        const p = D.projects.find((q) => q.id === currentId);
+        if (p) { pimg.src = asset(p.image); pimg.style.objectFit = p.fit || 'cover'; }
+      }
+      peek.classList.add('on');
+      // Sembunyikan hint permanen setelah pertama kali hover
+      if (hint && !hintHidden) {
+        hintHidden = true;
+        hint.style.transition = 'opacity 0.5s, transform 0.5s';
+        hint.style.opacity = '0';
+        hint.style.transform = 'translateY(-6px)';
+        setTimeout(() => { if (hint) hint.style.display = 'none'; }, 500);
+      }
+      if (!raf) loop();
+    });
+    host.addEventListener('mousemove', (e) => { x = e.clientX; y = e.clientY; if (!raf && on) loop(); });
+    host.addEventListener('mouseleave', () => { on = false; peek.classList.remove('on'); });
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Event                                                              */
+  /* ------------------------------------------------------------------ */
+  function bindUI() {
+    document.addEventListener('click', (e) => {
+      const nav = e.target.closest('[data-nav]');
+      if (nav) {
+        const id = (nav.getAttribute('href') || '').replace('#', '');
+        if (id) {
+          e.preventDefault();
+          const wasOpen = menu.classList.contains('open');
+          if (wasOpen) setMenu(false);
+          requestAnimationFrame(() => requestAnimationFrame(() => goTo(id)));
+        }
+        return;
+      }
+
+      const opener = e.target.closest('[data-open]');
+      if (opener) { openViewer(opener.dataset.open, parseInt(opener.dataset.index, 10), opener); return; }
+
+      const head = e.target.closest('.org-head');
+      if (head) {
+        const row = head.closest('.org');
+        const open = !row.classList.contains('open');
+        row.classList.toggle('open', open);
+        head.setAttribute('aria-expanded', String(open));
+        setTimeout(measure, 850);
+        return;
+      }
+
+      const tab = e.target.closest('[data-filter]');
+      if (tab) {
+        $$('#tabs button').forEach((b) => b.setAttribute('aria-pressed', String(b === tab)));
+        renderIndex(tab.dataset.filter, true);
+        setTimeout(measure, 100);
+        return;
+      }
+
+      if (e.target.closest('[data-close]')) closeViewer();
+    });
+
+    menuBtn.addEventListener('click', () => setMenu(!menu.classList.contains('open')));
+    $('#viewerClose').addEventListener('click', closeViewer);
+    $('#viewerPrev').addEventListener('click', () => stepViewer(-1));
+    $('#viewerNext').addEventListener('click', () => stepViewer(1));
+
+    document.addEventListener('keydown', (e) => {
+      if (viewer.classList.contains('open')) {
+        if (e.key === 'Escape') closeViewer();
+        else if (e.key === 'ArrowLeft') stepViewer(-1);
+        else if (e.key === 'ArrowRight') stepViewer(1);
+        else if (e.key === 'Tab') {
+          const f = $$('button, a[href]', viewer).filter((el) => !el.disabled && el.offsetParent !== null);
+          if (!f.length) return;
+          const first = f[0], last = f[f.length - 1];
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+        return;
+      }
+      if (e.key === 'Escape' && menu.classList.contains('open')) setMenu(false);
+    });
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* 5. Pembuka dan init                                                */
+  /* ------------------------------------------------------------------ */
+  function runLoader() {
+    const loader = $('#loader');
+    const num = $('#loaderNum');
+    let finished = false;
+
+    function ready() {
+      document.documentElement.classList.remove('is-loading');
+      document.body.classList.remove('is-loading');
+      document.body.classList.add('is-ready');
+    }
+    function done() {
+      if (finished) return;
+      finished = true;
+      if (num) num.textContent = '100';
+      if (loader) {
+        loader.classList.add('done');
+        setTimeout(() => loader.remove(), 1200);
+      }
+      setTimeout(ready, loader ? 350 : 0);
+    }
+
+    if (!loader || reduce) { if (loader) loader.remove(); finished = true; ready(); return; }
+
+    const t0 = performance.now();
+    const dur = 1100;
+    (function step(now) {
+      if (finished) return;
+      const t = clamp((now - t0) / dur, 0, 1);
+      num.textContent = Math.round((1 - Math.pow(1 - t, 3)) * 100);
+      if (t < 1) requestAnimationFrame(step); else done();
+    })(t0);
+    setTimeout(done, 4000);
+  }
+
+  function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+
+  function init() {
+    if (window.history && 'scrollRestoration' in window.history) window.history.scrollRestoration = 'manual';
+
+    renderHero();
+    renderAbout();
+    renderOrgs();
+    renderProjects();
+    renderSkills();
+    buildCerts(true);
+    renderPortal();
+    renderContact();
+    renderMenu();
+
+    bindUI();
+    initTheme();
+    initHeader();
+    initPeek();
+
+    engineReady = true;
+    collect();
+    observeReveals();
+    sy = window.scrollY;
+    request();
+
+    const remeasure = debounce(() => { buildCerts(false); measure(); }, 150);
+    window.addEventListener('resize', remeasure);
+    window.addEventListener('load', () => { measure(); observeReveals(); });
+    document.addEventListener('load', (e) => { if (e.target && e.target.tagName === 'IMG') remeasure(); }, true);
+    if ('ResizeObserver' in window) new ResizeObserver(debounce(measure, 120)).observe($('#main'));
+
+    // Safety fallback: force-reveal semua elemen yang belum tampil setelah 2.5 detik
+    // (mencegah gambar terjebak tersembunyi jika IntersectionObserver terlambat)
+    setTimeout(() => {
+      $$('.media:not(.in), .row:not(.in), .rise:not(.in)').forEach((el) => {
+        if (!el.closest('.hero') && !el.closest('.viewer') && !el.closest('.menu')) {
+          el.classList.add('in');
+        }
+      });
+    }, 2500);
+
+    runLoader();
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
