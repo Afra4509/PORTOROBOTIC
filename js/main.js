@@ -4,6 +4,8 @@
   const D = portfolioData;
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const canHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const IMGS = typeof portfolioImages === 'undefined' ? {} : portfolioImages;
+  let touchMode = !canHover;
 
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
@@ -71,11 +73,33 @@
 
   let engineReady = false;
 
-  function mediaHTML({ src, alt, fit, tag = 'div', attrs = '', cls = '', parallax = false }) {
+  const ratioOf = (p) => { const m = IMGS[p]; return m ? clamp(m[0] / m[1], 0.6, 2.4).toFixed(4) : ''; };
+  const arStyle = (p) => { const r = ratioOf(p); return r ? ` style="--ar:${r}"` : ''; };
+  const midVariant = (v) => (v.find(([w]) => w >= 960) || v[v.length - 1])[1];
+
+  function imgAttrs(p, sizes) {
+    const m = IMGS[p];
+    if (!m || !m[2].length) return `src="${esc(asset(p))}"${m ? ` width="${m[0]}" height="${m[1]}"` : ''}`;
+    const set = m[2].map(([w, f]) => `${esc(asset(f))} ${w}w`).join(', ');
+    return `src="${esc(asset(midVariant(m[2])))}" srcset="${set}" sizes="${sizes}" width="${m[0]}" height="${m[1]}"`;
+  }
+
+  function setImg(img, p, sizes) {
+    const m = IMGS[p];
+    if (m && m[2].length) {
+      img.sizes = sizes;
+      img.srcset = m[2].map(([w, f]) => `${asset(f)} ${w}w`).join(', ');
+      img.src = asset(midVariant(m[2]));
+    } else {
+      img.removeAttribute('srcset');
+      img.src = asset(p);
+    }
+  }
+
+  function mediaHTML({ src, alt, fit, tag = 'div', attrs = '', cls = '', sizes = '100vw', priority = false }) {
     const fitStyle = fit ? ` style="object-fit:${fit}"` : '';
-    const px = parallax ? ' data-img-parallax="0.12"' : '';
     if (/data-open/.test(attrs)) attrs += ' data-cursor="Lihat"';
-    return `<${tag} class="media ${cls}" ${attrs}><span class="media-in"><img src="${esc(asset(src))}" alt="${esc(alt)}" decoding="async"${px}${fitStyle} /></span></${tag}>`;
+    return `<${tag} class="media ${cls}" ${attrs}><span class="media-in"><img ${imgAttrs(src, sizes)} alt="${esc(alt)}" decoding="async"${priority ? ' fetchpriority="high"' : ''}${fitStyle} /></span></${tag}>`;
   }
 
   function setAR(img, host) {
@@ -141,8 +165,8 @@
     ).join('');
 
     const proj = D.projects[projectIndex(p.heroProject)] || D.projects[0];
-    $('#heroFigure').innerHTML = `<div class="hero-fig-in ar-host"><div class="hero-frame">` + mediaHTML({
-      src: p.heroImage, alt: proj.name, fit: proj.fit, tag: 'button',
+    $('#heroFigure').innerHTML = `<div class="hero-fig-in ar-host"${arStyle(p.heroImage)}><div class="hero-frame">` + mediaHTML({
+      src: p.heroImage, alt: proj.name, fit: proj.fit, tag: 'button', sizes: '(max-width: 640px) 92vw, 40vw', priority: true,
       attrs: `type="button" data-open="project" data-index="${projectIndex(proj.id)}" aria-label="Lihat detail ${esc(proj.name)}"`
     }) + `</div><p class="hero-cap"><span><b>${esc(proj.id)}</b>&nbsp; ${esc(proj.name)}</span><span>${esc(proj.year)}</span></p></div>`;
 
@@ -189,7 +213,7 @@
             <span class="badge-slot" aria-hidden="true"></span>
             <div class="badge-top" aria-hidden="true"><span><b>AFD</b> / ID-01</span><span>${esc(p.year)}</span></div>
             <div class="badge-photo">
-              ${mediaHTML({ src: p.photo, alt: `Foto ${p.name}`, cls: 'badge-media', parallax: false })}
+              ${mediaHTML({ src: p.photo, alt: `Foto ${p.name}`, cls: 'badge-media', sizes: '340px' })}
               <span class="badge-scan" aria-hidden="true"></span>
             </div>
             <figcaption class="badge-body">
@@ -251,10 +275,10 @@
       return `
       <article class="spread${i % 2 ? ' flip' : ''}" style="--k:${i}">
         <div class="spread-media">
-          <div class="board-wrap ar-host">
+          <div class="board-wrap ar-host"${arStyle(p.image)}>
           <div class="board-dim" aria-hidden="true"><span data-scramble>${esc(p.id)}</span><i></i><span data-scramble>${esc(p.area)}, ${esc(p.year)}</span></div>
           <div class="board">
-            ${mediaHTML({ src: p.image, alt: p.name, fit: p.fit, tag: 'button', attrs: `type="button" data-open="project" data-index="${idx}" aria-label="Lihat detail ${esc(p.name)}"` })}
+            ${mediaHTML({ src: p.image, alt: p.name, fit: p.fit, tag: 'button', sizes: '(max-width: 960px) 92vw, 62vw', attrs: `type="button" data-open="project" data-index="${idx}" aria-label="Lihat detail ${esc(p.name)}"` })}
             <i class="fid f1" aria-hidden="true"></i><i class="fid f2" aria-hidden="true"></i><i class="fid f3" aria-hidden="true"></i>
           </div>
           </div>
@@ -289,6 +313,7 @@
         <button class="row-btn" type="button" data-open="project" data-index="${projectIndex(p.id)}" data-id="${p.id}" aria-label="${esc(p.name)}, ${esc(p.area)}, ${esc(p.year)}">
           <span class="row-no">${pad(i + 1)}</span>
           <span class="row-left">
+            <span class="row-thumb" aria-hidden="true"><img ${imgAttrs(p.image, '128px')} alt="" loading="lazy" decoding="async" /></span>
             <span class="ico" aria-hidden="true">${getProjectIcon(p.area)}</span>
             <span class="row-name" aria-hidden="true">${rollHTML(p.name)}</span>
           </span>
@@ -325,7 +350,7 @@
     return `
       <button class="cert rise" type="button" data-cursor="Buka" data-open="cert" data-index="${i}" aria-label="Lihat ${esc(c.title)}, ${esc(c.org)}">
         <span class="cert-frame" data-no="C${pad(i + 1)}">
-          ${mediaHTML({ src: c.image, alt: `${c.title}, ${c.org}`, tag: 'span', cls: 'media--natural', parallax: false })}
+          ${mediaHTML({ src: c.image, alt: `${c.title}, ${c.org}`, tag: 'span', cls: 'media--natural', sizes: '(max-width: 639px) 92vw, (max-width: 999px) 46vw, 30vw' })}
         </span>
         <span class="cert-cap">
           <span class="cert-title">${esc(c.title)}</span>
@@ -347,7 +372,7 @@
     const host = $('#certCols');
     host.style.setProperty('--cols', n);
     host.innerHTML = cols.map((items, ci) =>
-      `<div class="cert-col"${n > 1 && !reduce ? ` data-speed="${speeds[ci]}" data-skew="1"` : ''}>${items.join('')}</div>`
+      `<div class="cert-col"${n > 1 && !reduce && !touchMode ? ` data-speed="${speeds[ci]}" data-skew="1"` : ''}>${items.join('')}</div>`
     ).join('');
     if (engineReady) { collect(); observeReveals(); }
   }
@@ -421,7 +446,7 @@
   function ssSync() { SS.y = SS.target = window.scrollY; }
 
   function ssBy(d) {
-    if (!SS.active) ssSync();
+    if (!SS.active) { ssSync(); SS.set = null; }
     SS.tween = null;
     SS.target = clamp(SS.target + d, 0, maxScroll());
     SS.active = true;
@@ -439,6 +464,7 @@
 
   function ssStep(now, dt) {
     if (!SS.active) return;
+    if (SS.set != null && Math.abs(window.scrollY - SS.set) > 3) { SS.active = false; SS.tween = null; SS.set = null; ssSync(); return; }
     if (SS.tween) {
       const t = clamp((now - SS.tween.t0) / SS.tween.dur, 0, 1);
       SS.y = lerp(SS.tween.from, SS.tween.to, easeIO(t));
@@ -449,6 +475,7 @@
       if (Math.abs(SS.target - SS.y) < 0.35) { SS.y = SS.target; SS.active = false; }
     }
     window.scrollTo(0, SS.y);
+    SS.set = SS.active ? window.scrollY : null;
   }
 
   function initSmooth() {
@@ -479,7 +506,9 @@
   }
 
   const items = [];
-  let vh = window.innerHeight, docH = 0, sy = window.scrollY, lastY = sy, vel = 0, lastNow = 0;
+  let vh = window.innerHeight, docH = 0, sy = window.scrollY, lastY = sy, vel = 0, velS = 0, lastNow = 0;
+  const headerEl = $('#header'), metaTheme = $('meta[name="theme-color"]');
+  let secBounds = [], hdH = 64, hdTheme = '', themeReady = false;
   let heroLines = [], heroFigure = null, heroGrid = null, heroTr = [], spreads = [], footSign = null;
   const stmt = { el: null, words: [], top: 0, h: 0, p: 0 };
   let badgeTick = null, cursorTick = null, panels = [], panelInset = 4;
@@ -511,7 +540,7 @@
     heroTr = $$('.hero-bg .tr');
     spreads = $$('#featured .spread');
     footSign = $('#footSign');
-    panels = reduce ? [] : $$('section[data-bg="dark"]');
+    panels = reduce || touchMode ? [] : $$('section[data-bg="dark"]');
     panelInset = window.innerWidth < 640 ? 2.5 : 4;
     stmt.el = $('#statement');
     stmt.words = stmt.el ? $$('.sw', stmt.el) : [];
@@ -533,14 +562,59 @@
     items.forEach((it) => { if (it.type === 'speed') { it.top = pageTop(it.el); it.h = it.el.offsetHeight; } });
     if (stmt.el) { stmt.top = pageTop(stmt.el); stmt.h = stmt.el.offsetHeight; }
     mq.forEach((m) => { m.w = m.el.firstElementChild.offsetWidth || 1; });
+    secBounds = $$('#main > section').map((sec) => { const t = pageTop(sec); return [t, t + sec.offsetHeight, sec.dataset.bg === 'dark']; });
+    hdH = headerEl ? headerEl.offsetHeight : 64;
     request();
+  }
+
+  function setThemeColor(th) {
+    if (metaTheme) metaTheme.setAttribute('content', th === 'dark' ? '#0C2A21' : '#EEF0EA');
+  }
+
+  function headerTheme(y) {
+    const probe = y + hdH * 0.5;
+    let dark = false;
+    for (const [t, b, d] of secBounds) { if (probe >= t && probe < b) { dark = d; break; } }
+    const th = dark ? 'dark' : 'light';
+    if (th === hdTheme) return;
+    hdTheme = th;
+    if (headerEl) headerEl.dataset.theme = th;
+    if (themeReady && !document.body.classList.contains('menu-open')) setThemeColor(th);
+  }
+
+  function enterTouchMode() {
+    if (touchMode) return;
+    touchMode = true;
+    document.documentElement.classList.add('touch');
+    $$('[data-speed]').forEach((el) => { el.removeAttribute('data-speed'); el.removeAttribute('data-skew'); el.style.transform = ''; });
+    [...heroLines, heroFigure, heroGrid, ...heroTr, footSign, ...spreads].forEach((el) => {
+      if (!el) return;
+      el.style.transform = ''; el.style.opacity = ''; el.style.removeProperty('--fade');
+    });
+    panels.forEach((sec) => { sec.style.clipPath = ''; sec._q = ''; });
+    mq.forEach((m) => { m.el.style.transform = ''; });
+    collect();
   }
 
   function update(dt) {
     const y = window.scrollY;
     vel = y - lastY; lastY = y; sy = y;
+    velS += (vel - velS) * (1 - Math.pow(0.82, dt));
     if (progressEl) progressEl.style.transform = `scaleX(${clamp(y / Math.max(1, docH - vh), 0, 1).toFixed(4)})`;
+    headerTheme(y);
     if (reduce) return;
+
+    if (stmt.words.length) {
+      const start = stmt.top - vh * 0.85, end = stmt.top + stmt.h - vh * 0.4;
+      stmt.p += (clamp((y - start) / Math.max(1, end - start), 0, 1) - stmt.p) * (1 - Math.pow(0.8, dt));
+      const n = stmt.words.length;
+      for (let i = 0; i < n; i++) {
+        const o = (0.14 + 0.86 * clamp((stmt.p * (n + 3) - i) / 3, 0, 1)).toFixed(3);
+        if (stmt.words[i]._o !== o) { stmt.words[i]._o = o; stmt.words[i].style.opacity = o; }
+      }
+    }
+
+    if (touchMode) return;
 
     const mid = y + vh / 2;
     for (const it of items) {
@@ -551,7 +625,7 @@
         const k = it.lag === 1 ? 1 : 1 - Math.pow(1 - it.lag, dt);
         it.cur += (ty - it.cur) * k;
         it.curR += (tr - it.curR) * k;
-        const sk = it.skew ? ` skewY(${clamp(-vel * 0.035, -1.4, 1.4).toFixed(2)}deg)` : '';
+        const sk = it.skew ? ` skewY(${clamp(-velS * 0.035, -1.4, 1.4).toFixed(2)}deg)` : '';
         it.el.style.transform = `translate3d(0,${it.cur.toFixed(1)}px,0)${it.r ? ` rotate(${it.curR.toFixed(2)}deg)` : ''}${sk}`;
       } else if (visible.has(it.frame)) {
         const r = it.frame.getBoundingClientRect();
@@ -573,16 +647,6 @@
         const d = parseFloat(g.dataset.d);
         g.style.transform = `translate3d(${(-mx * d * 260).toFixed(1)}px,${(y * d * 1.3 - my * d * 160).toFixed(1)}px,0)`;
       });
-    }
-
-    if (stmt.words.length) {
-      const start = stmt.top - vh * 0.85, end = stmt.top + stmt.h - vh * 0.4;
-      stmt.p += (clamp((y - start) / Math.max(1, end - start), 0, 1) - stmt.p) * (1 - Math.pow(0.8, dt));
-      const n = stmt.words.length;
-      for (let i = 0; i < n; i++) {
-        const o = (0.14 + 0.86 * clamp((stmt.p * (n + 3) - i) / 3, 0, 1)).toFixed(3);
-        if (stmt.words[i]._o !== o) { stmt.words[i]._o = o; stmt.words[i].style.opacity = o; }
-      }
     }
 
     const on = stackMQ.matches;
@@ -617,9 +681,9 @@
   }
 
   function mqTick(dt) {
-    if (reduce || !mq.length || !mqVis) return;
-    if (Math.abs(vel) > 0.5) mqDir = vel > 0 ? 1 : -1;
-    mqv += (Math.abs(vel) - mqv) * 0.08;
+    if (reduce || touchMode || !mq.length || !mqVis) return;
+    if (Math.abs(velS) > 0.5) mqDir = velS > 0 ? 1 : -1;
+    mqv += (Math.abs(velS) - mqv) * 0.08;
     const step = (0.6 + Math.min(mqv, 60) * 0.35) * mqDir * dt;
     mq.forEach((m, i) => {
       m.pos += step;
@@ -646,7 +710,7 @@
     const host = $('#heroBg'); if (!host) return;
     let s = 7; const rnd = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
     const G = 48;
-    host.innerHTML = `<svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${[[0.04, 6], [0.09, 5], [0.16, 4]].map(([d, n], li) => {
+    host.innerHTML = [[0.04, 6], [0.09, 5], [0.16, 4]].map(([d, n], li) => {
       let g = '';
       for (let k = 0; k < n; k++) {
         let x = Math.round(rnd() * 20) * G, y = Math.round(rnd() * 18) * G, p = `M${x} ${y}`;
@@ -658,8 +722,8 @@
         g += `<path pathLength="1" style="--dl:${(k * 0.25 + li * 0.15).toFixed(2)}s" d="${p}"/><circle cx="${x}" cy="${y}" r="${li === 2 ? 7 : 5}"/>`;
         if (li === 2 && k < 3) g += `<path class="pulse" pathLength="1000" style="animation-duration:${5 + k * 1.7}s" d="${p}"/>`;
       }
-      return `<g class="tr" data-d="${d}">${g}</g>`;
-    }).join('')}</svg>`;
+      return `<svg class="tr" data-d="${d}" style="--d:${d}" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${g}</svg>`;
+    }).join('');
   }
 
   function buildMarquee() {
@@ -797,19 +861,21 @@
     if (reduce) return;
     for (const b of bots) {
       if (!b.vis) continue;
-      const r = b.el.getBoundingClientRect();
-      const cx = r.left + r.width / 2, cy = r.top + r.height * 0.3;
       let tx, ty;
-      if (hasPtr) { tx = clamp((ptrX - cx) / 320, -1, 1); ty = clamp((ptrY - cy) / 260, -1, 1); }
-      else {
+      if (hasPtr) {
+        const r = b.el.getBoundingClientRect();
+        const cx = r.left + r.width / 2, cy = r.top + r.height * 0.3;
+        tx = clamp((ptrX - cx) / 320, -1, 1); ty = clamp((ptrY - cy) / 260, -1, 1);
+      } else {
         if (now > b.wanderAt) { b.wanderAt = now + 1800 + Math.random() * 2200; b.wx = Math.random() * 2 - 1; b.wy = Math.random() * 1.2 - 0.6; }
         tx = b.wx; ty = b.wy;
       }
       const k = 1 - Math.pow(0.86, dt);
       b.ex += (tx - b.ex) * k; b.ey += (ty - b.ey) * k;
-      b.hr += (b.ex * 7 + clamp(vel * 0.25, -8, 8) - b.hr) * (1 - Math.pow(0.9, dt));
-      b.eyes.style.transform = `translate(${(b.ex * 4.5).toFixed(2)}px,${(b.ey * 3.5).toFixed(2)}px)`;
-      b.head.style.transform = `rotate(${b.hr.toFixed(2)}deg)`;
+      b.hr += (b.ex * 7 + (touchMode ? 0 : clamp(velS * 0.25, -8, 8)) - b.hr) * (1 - Math.pow(0.9, dt));
+      const eyes = `translate(${(b.ex * 4.5).toFixed(1)}px,${(b.ey * 3.5).toFixed(1)}px)`, head = `rotate(${b.hr.toFixed(1)}deg)`;
+      if (eyes !== b._e) { b._e = eyes; b.eyes.style.transform = eyes; }
+      if (head !== b._h) { b._h = head; b.head.style.transform = head; }
       if (now > b.blinkAt) {
         b.el.classList.add('blink');
         setTimeout(() => b.el.classList.remove('blink'), 140);
@@ -835,7 +901,7 @@
 
   function initFx() {
     buildHeroBg(); buildMarquee(); buildBots(); initSparks();
-    if (!reduce) $$('.section-head').forEach((el) => { el.dataset.speed = '0.04'; el.dataset.skew = '1'; });
+    if (!reduce && !touchMode) $$('.section-head').forEach((el) => { el.dataset.speed = '0.04'; el.dataset.skew = '1'; });
     if (reduce || !canHover) return;
 
     const hero = $('#beranda');
@@ -897,7 +963,9 @@
     const txt = el.textContent.trim();
     el.setAttribute('aria-label', txt);
     let ci = 0;
-    el.innerHTML = txt.split(/\s+/).map((w) => `<span class="w" aria-hidden="true">${[...w].map((ch) => `<span class="c" style="--ci:${ci++}">${esc(ch)}</span>`).join('')}</span>`).join(' ');
+    el.innerHTML = txt.split(/\s+/).map((w) => touchMode
+      ? `<span class="w" aria-hidden="true"><span class="c" style="--ci:${(ci++) * 3}">${esc(w)}</span></span>`
+      : `<span class="w" aria-hidden="true">${[...w].map((ch) => `<span class="c" style="--ci:${ci++}">${esc(ch)}</span>`).join('')}</span>`).join(' ');
     el.dataset.done = '1';
   }
 
@@ -967,15 +1035,17 @@
 
   function initHeader() {
     const header = $('#header');
-    let last = window.scrollY;
+    let last = window.scrollY, run = 0;
     window.addEventListener('scroll', () => {
-      const y = window.scrollY;
+      const y = window.scrollY, max = maxScroll();
       header.classList.toggle('scrolled', y > 8);
-      if (document.body.classList.contains('menu-open')) { last = y; return; }
-      if (y > last + 4 && y > 160) header.classList.add('is-hidden');
-      else if (y < last - 4 || y < 160) header.classList.remove('is-hidden');
-      last = y;
       request();
+      if (document.body.classList.contains('menu-open') || y < 0 || y > max) { last = clamp(y, 0, max); run = 0; return; }
+      const d = y - last; last = y;
+      if (!d) return;
+      run = Math.sign(d) === Math.sign(run) ? run + d : d;
+      if (y < 160 || run < -36) header.classList.remove('is-hidden');
+      else if (run > 36) header.classList.add('is-hidden');
     }, { passive: true });
   }
 
@@ -990,6 +1060,7 @@
     menuBtn.setAttribute('aria-expanded', String(open));
     $('#menuBtnText').textContent = open ? 'Tutup' : 'Menu';
     if (open) $('#header').classList.remove('is-hidden');
+    if (themeReady) setThemeColor(open ? 'dark' : hdTheme);
   }
 
   function goTo(id) {
@@ -1008,7 +1079,7 @@
     const isProject = V.kind === 'project';
     vImg.classList.remove('ready');
     vImg.onload = vImg.onerror = () => vImg.classList.add('ready');
-    vImg.src = asset(it.image);
+    setImg(vImg, it.image, '(max-width: 960px) 100vw, 62vw');
     vImg.alt = isProject ? it.name : `${it.title}, ${it.org}`;
     vImg.style.objectFit = (isProject && it.fit) || 'contain';
     if (vImg.complete && vImg.naturalWidth) vImg.classList.add('ready');
@@ -1087,7 +1158,13 @@
       if (btn.dataset.id !== currentId) {
         currentId = btn.dataset.id;
         const p = D.projects.find((q) => q.id === currentId);
-        if (p) { pimg.src = asset(p.image); pimg.style.objectFit = p.fit || 'contain'; tag.textContent = `${p.id}, ${p.area}`; }
+        if (p) {
+          const r = ratioOf(p.image);
+          if (r) peek.style.setProperty('--ar', r);
+          setImg(pimg, p.image, '360px');
+          pimg.style.objectFit = p.fit || 'contain';
+          tag.textContent = `${p.id}, ${p.area}`;
+        }
       }
       peek.classList.add('on');
       if (!raf) raf = requestAnimationFrame(loop);
@@ -1147,7 +1224,7 @@
     const stage = $('#badgeStage'); if (!stage) return;
     const swing = $('#badgeSwing'), card = $('#badge'), img = $('.badge-photo img');
     if (reduce) { stage.classList.add('in'); return; }
-    let th = 0, thv = 0, rx = 0, ry = 0, trx = 0, trY = 0, drag = null, active = false;
+    let th = 0, thv = 0, rx = 0, ry = 0, trx = 0, trY = 0, drag = null, active = false, last = '';
 
     new IntersectionObserver((es) => es.forEach((e) => {
       active = e.isIntersecting;
@@ -1182,11 +1259,14 @@
     badgeTick = (dt) => {
       if (!active && Math.abs(th) < 0.02 && Math.abs(thv) < 0.02) return;
       if (!drag) {
-        thv += (-0.013 * th - 0.03 * thv - clamp(vel, -60, 60) * 0.004) * dt;
+        thv += (-0.013 * th - 0.03 * thv - (touchMode ? 0 : clamp(velS, -60, 60) * 0.004)) * dt;
         th = clamp(th + thv * dt, -45, 45);
       }
       const k = 1 - Math.pow(0.88, dt);
       rx += (trx - rx) * k; ry += (trY - ry) * k;
+      const key = `${th.toFixed(2)}|${rx.toFixed(2)}|${ry.toFixed(2)}`;
+      if (key === last) return;
+      last = key;
       swing.style.transform = `rotate(${th.toFixed(2)}deg)`;
       card.style.transform = `rotateX(${rx.toFixed(2)}deg) rotateY(${(ry - th * 0.35).toFixed(2)}deg)`;
       if (img) img.style.transform = `translate3d(${(-ry * 0.45).toFixed(1)}px,${(rx * 0.45).toFixed(1)}px,0)`;
@@ -1294,11 +1374,21 @@
     const loader = $('#loader');
     let finished = false, loaded = document.readyState === 'complete';
     window.addEventListener('load', () => { loaded = true; });
+    const heroImg = $('#heroFigure img');
+    const heroReady = new Promise((res) => {
+      if (!heroImg || (heroImg.complete && heroImg.naturalWidth)) { res(); return; }
+      heroImg.addEventListener('load', res, { once: true });
+      heroImg.addEventListener('error', res, { once: true });
+    });
+    const fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready.catch(() => { }) : Promise.resolve();
+    Promise.all([heroReady, fontsReady]).then(() => { loaded = true; });
 
     function ready() {
       document.documentElement.classList.remove('is-loading');
       document.body.classList.remove('is-loading');
       document.body.classList.add('is-ready');
+      themeReady = true;
+      setThemeColor(hdTheme || 'light');
       onReady();
     }
     function done() {
@@ -1348,14 +1438,27 @@
       ).join('');
       padEls = $$('.pad', padsG);
     }
-    layout();
-    window.addEventListener('resize', layout);
+    // Safety: jika layout atau SVG gagal, langsung done()
+    try { layout(); } catch(e) { setTimeout(done, 0); return; }
+    window.addEventListener('resize', () => { try { layout(); } catch(e) {} });
 
-    const dur = quick ? 1300 : 2700, exitDur = 700;
+    // Pastikan SVG sudah dirender (layout sudah dihitung) sebelum memulai animasi
+    setTimeout(done, 9000); // hard safety net - maksimal 9 detik
+    const dur = quick ? 1200 : 2600, exitDur = 700;
+    let last = 0, exitAt = 0, stageI = -1;
+    let x = 0, y = 0, vx = 0, vy = 0, tilt = 0, th = 0, thv = 0, pvx = 0;
+
+    // Delay 1 rAF agar browser selesai layout SVG sebelum kita query getTotalLength/getPointAtLength
+    requestAnimationFrame(() => {
+    try {
+      // Re-layout di dalam rAF agar dimensi SVG sudah benar
+      layout();
+      const start = route.getPointAtLength(0);
+      x = isFinite(start.x) ? start.x : innerWidth * 0.1;
+      y = isFinite(start.y) ? start.y + 40 : innerHeight * 0.65;
+    } catch(e) { setTimeout(done, 0); return; }
     const t0 = performance.now();
-    let last = t0, exitAt = 0, stageI = -1;
-    const start = route.getPointAtLength(0);
-    let x = start.x, y = start.y + 40, vx = 0, vy = 0, tilt = 0, th = 0, thv = 0, pvx = 0;
+    last = t0;
 
     (function step(now) {
       if (finished) return;
@@ -1414,17 +1517,44 @@
         setTimeout(() => { stageEl.textContent = STAGES[si][1]; stageEl.classList.remove('swap'); }, 160);
       }
 
-      requestAnimationFrame(step);
+        requestAnimationFrame(step);
     })(t0);
-
-    setTimeout(done, 8000);
+    }); // end requestAnimationFrame wrapper
   }
 
   function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 
+  function fitType() {
+    const name = $('#heroName'), fig = $('#heroFigure'), figIn = $('#heroFigure .hero-fig-in');
+    if (name) {
+      name.style.removeProperty('--fit');
+      const widest = Math.max(0, ...$$('.line', name).map((l) => { const c = l.querySelector('.ch:last-child'); return c ? c.offsetLeft + c.offsetWidth : 0; }));
+      let room = name.clientWidth;
+      if (fig && figIn && fig.offsetTop < name.offsetTop + name.offsetHeight) room = Math.min(room, fig.offsetLeft + figIn.offsetLeft - name.offsetLeft - 20);
+      if (widest > room && room > 0) name.style.setProperty('--fit', (room / widest).toFixed(3));
+    }
+    const sign = $('#footSign');
+    if (sign) {
+      const box = sign.parentElement;
+      box.style.removeProperty('--fit');
+      const w = sign.offsetWidth, room = box.clientWidth;
+      if (w > room && room > 0) box.style.setProperty('--fit', ((room * 0.99) / w).toFixed(3));
+    }
+  }
+
+  function initVideo() {
+    const v = $('.contact-video video'); if (!v) return;
+    if (reduce || !('IntersectionObserver' in window)) return;
+    new IntersectionObserver((es) => es.forEach((e) => {
+      if (e.isIntersecting) { const pr = v.play(); if (pr && pr.catch) pr.catch(() => { }); } else v.pause();
+    }), { rootMargin: '200px 0px' }).observe(v);
+  }
+
   function init() {
     if (window.history && 'scrollRestoration' in window.history) window.history.scrollRestoration = 'manual';
     window.scrollTo(0, 0);
+    document.documentElement.classList.toggle('touch', touchMode);
+    if (!touchMode) window.addEventListener('touchstart', enterTouchMode, { once: true, passive: true });
 
     renderHero();
     renderAbout();
@@ -1437,6 +1567,8 @@
     renderMenu();
     decorateHeads();
     $$('.ar-host').forEach((h) => setAR($('img', h), h));
+    fitType();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { fitType(); measure(); });
 
     bindUI();
     initTheme();
@@ -1447,13 +1579,19 @@
     initBadge();
     initFx();
     initSmooth();
+    initVideo();
 
     engineReady = true;
     collect();
     sy = lastY = window.scrollY;
     request();
 
-    const remeasure = debounce(() => { buildCerts(false); measure(); }, 150);
+    let lastW = window.innerWidth;
+    const remeasure = debounce(() => {
+      const w = window.innerWidth;
+      if (touchMode && w === lastW) { vh = window.innerHeight; return; }
+      lastW = w; buildCerts(false); fitType(); measure();
+    }, 150);
     window.addEventListener('resize', remeasure);
     window.addEventListener('load', () => { measure(); });
     document.addEventListener('load', (e) => { if (e.target && e.target.tagName === 'IMG') remeasure(); }, true);

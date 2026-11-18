@@ -81,9 +81,12 @@ body[data-bg="dark"] {
 
 html {
   -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
   scroll-behavior: smooth;
   scroll-padding-top: var(--hd);
-  background-color: var(--mask);
+  background-color: #EEF0EA;
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
 }
 
 html.has-smooth {
@@ -106,9 +109,6 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: clip;
-  transition:
-    --bg .9s var(--ease-io), --fg .9s var(--ease-io), --muted .9s var(--ease-io),
-    --line .9s var(--ease-io), --accent .9s var(--ease-io), --panel .9s var(--ease-io);
 }
 
 body.no-scroll {
@@ -194,7 +194,6 @@ button {
   --accent: #D4AF5A;
   --panel: #123629;
   z-index: 2;
-  will-change: clip-path;
 }
 
 .section>.container {
@@ -558,9 +557,15 @@ button {
   transform: scaleX(0);
   transform-origin: left;
   pointer-events: none;
+  transition: background-color .5s;
 }
 
 .header {
+  --bg: #EEF0EA;
+  --fg: #101512;
+  --muted: #5D675F;
+  --line: rgba(16, 21, 18, 0.14);
+  --accent: #0E4D3A;
   position: fixed;
   inset: 0 0 auto 0;
   z-index: 70;
@@ -569,10 +574,19 @@ button {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  background: var(--bg);
+  background-color: var(--bg);
+  color: var(--fg);
   font-size: .95rem;
   font-weight: 500;
-  transition: transform .7s var(--ease), box-shadow .4s;
+  transition: transform .7s var(--ease), box-shadow .4s, background-color .45s var(--ease), color .45s var(--ease);
+}
+
+.header[data-theme="dark"] {
+  --bg: #0C2A21;
+  --fg: #EAF0E9;
+  --muted: rgba(234, 240, 233, 0.62);
+  --line: rgba(234, 240, 233, 0.16);
+  --accent: #D4AF5A;
 }
 
 .header.scrolled {
@@ -1017,9 +1031,15 @@ body.menu-open .hd-no {
   position: absolute;
   inset: 0;
   z-index: 0;
+  overflow: hidden;
   pointer-events: none;
-  -webkit-mask-image: linear-gradient(#000 50%, transparent 96%);
-  mask-image: linear-gradient(#000 50%, transparent 96%);
+}
+
+.hero-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 48%, var(--bg) 95%);
 }
 
 .hero-bg::before {
@@ -1035,14 +1055,13 @@ body.is-ready .hero-bg::before {
   opacity: .9;
 }
 
-.hero-bg svg {
-  position: relative;
+.hero-bg .tr {
+  position: absolute;
+  inset: 0;
+  display: block;
   width: 100%;
   height: 100%;
-  display: block;
-}
-
-.hero-bg g {
+  overflow: visible;
   fill: none;
   stroke: var(--fg);
   stroke-opacity: .16;
@@ -1161,7 +1180,7 @@ body.is-ready .hero-bg .pulse {
   grid-column: 1 / -1;
   grid-row: 1;
   align-self: end;
-  font-size: clamp(3.8rem, min(17vw, 25vh), 15rem);
+  font-size: calc(clamp(3.8rem, min(17vw, 25vh), 15rem) * var(--fit, 1));
   font-weight: 700;
   line-height: .86;
   letter-spacing: -.035em;
@@ -3132,7 +3151,6 @@ body.is-ready .hero .rise {
   display: flex;
   flex-direction: column;
   gap: clamp(36px, 4vw, 64px);
-  will-change: transform;
 }
 
 .cert {
@@ -3151,7 +3169,6 @@ body.is-ready .hero .rise {
   padding: 10px;
   border: 1px solid var(--line);
   transition: border-color .5s, transform .7s var(--ease);
-  will-change: transform;
 }
 
 .cert-frame::before {
@@ -3414,7 +3431,7 @@ body.is-ready .hero .rise {
 .foot-sign {
   margin-top: clamp(40px, 6vw, 80px);
   overflow: hidden;
-  font-size: clamp(3rem, 11.2vw, 11.5rem);
+  font-size: calc(clamp(2.4rem, 10.2vw, 10.5rem) * var(--fit, 1));
   font-weight: 700;
   line-height: .82;
   letter-spacing: -.06em;
@@ -3427,7 +3444,6 @@ body.is-ready .hero .rise {
 
 .foot-sign span {
   display: inline-block;
-  will-change: transform;
 }
 
 .foot-sign i {
@@ -3837,7 +3853,7 @@ body.is-ready .hero .rise {
 
   .hero-name {
     grid-row: 1;
-    font-size: clamp(3.4rem, 21vw, 9rem);
+    font-size: calc(clamp(3.4rem, 21vw, 9rem) * var(--fit, 1));
   }
 
   .hero-figure {
@@ -4188,7 +4204,7 @@ body.is-loading .cursor {
   gap: 4px;
   transform: translateY(-50%);
   color: var(--fg);
-  transition: opacity .5s;
+  transition: opacity .5s, color .5s;
 }
 
 .rail a {
@@ -4789,5 +4805,223 @@ body.menu-open .rail {
   .bot {
     opacity: 1;
     transform: none;
+  }
+}
+
+
+.row-thumb {
+  display: none;
+}
+
+html.touch .row-thumb {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 64px;
+  height: 48px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--panel);
+}
+
+html.touch .row-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+html.touch .row-left .ico {
+  display: none;
+}
+
+html.touch .row-left {
+  gap: 14px;
+}
+
+html.touch .row-btn {
+  transition: background-color .25s;
+  border-radius: 10px;
+}
+
+html.touch .row-btn:active {
+  background-color: color-mix(in srgb, var(--fg) 7%, transparent);
+}
+
+html.touch .btn:active,
+html.touch .tabs button:active {
+  transform: scale(.96);
+  transition-duration: .12s;
+}
+
+html.touch .cert:active .cert-frame,
+html.touch .board:active {
+  transform: scale(.985);
+  transition-duration: .15s;
+}
+
+html.touch .contact-rows a:active {
+  color: var(--accent);
+}
+
+html.touch .org-head:active .org-name {
+  opacity: .65;
+}
+
+html.touch .hero-bg .pulse {
+  display: none;
+}
+
+html.touch .section[data-bg="dark"] {
+  background: transparent;
+}
+
+html.touch .section[data-bg="dark"]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 26px;
+  background: var(--bg);
+}
+
+html.touch #kontak::before {
+  border-radius: 26px 26px 0 0;
+}
+
+html.touch .mq-track {
+  animation: mq-run 48s linear infinite;
+}
+
+html.touch .mq-b .mq-track {
+  animation-direction: reverse;
+  animation-duration: 56s;
+}
+
+@keyframes mq-run {
+  to {
+    transform: translate3d(-25%, 0, 0);
+  }
+}
+
+@supports (animation-timeline: view()) {
+  html.touch .hero {
+    view-timeline: --hero block;
+  }
+
+  html.touch .hero-grid,
+  html.touch .hero-name .line,
+  html.touch .hero-bg .tr {
+    animation-duration: 1ms;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-timeline: --hero;
+    animation-range: exit 0% exit 100%;
+  }
+
+  html.touch .hero-grid {
+    animation-name: hero-fade;
+  }
+
+  html.touch .hero-name .line[data-dir="-1"] {
+    animation-name: line-left;
+  }
+
+  html.touch .hero-name .line[data-dir="1"] {
+    animation-name: line-right;
+  }
+
+  html.touch .hero-bg .tr {
+    animation-name: tr-drop;
+  }
+
+  html.touch .section[data-bg="dark"] {
+    view-timeline: --panel block;
+  }
+
+  html.touch .section[data-bg="dark"]::before {
+    animation: panel-open 1ms linear both, panel-close 1ms linear forwards;
+    animation-timeline: --panel, --panel;
+    animation-range: entry 0% entry 75%, exit 25% exit 100%;
+  }
+
+  html.touch #kontak::before {
+    animation: panel-open 1ms linear both;
+    animation-timeline: --panel;
+    animation-range: entry 0% entry 75%;
+  }
+
+  html.touch #footSign {
+    animation: foot-in 1ms linear both;
+    animation-timeline: scroll(root block);
+    animation-range: calc(100% - 100vh) 100%;
+  }
+}
+
+@keyframes hero-fade {
+  to {
+    opacity: .25;
+    transform: scale(.95);
+  }
+}
+
+@keyframes line-left {
+  to {
+    transform: translate3d(-30vw, 0, 0);
+  }
+}
+
+@keyframes line-right {
+  to {
+    transform: translate3d(30vw, 0, 0);
+  }
+}
+
+@keyframes tr-drop {
+  to {
+    transform: translate3d(0, calc(var(--d, .1) * 900px), 0);
+  }
+}
+
+@keyframes panel-open {
+  from {
+    transform: scaleX(.9);
+  }
+
+  to {
+    transform: none;
+  }
+}
+
+@keyframes panel-close {
+  from {
+    transform: none;
+  }
+
+  to {
+    transform: scaleX(.9);
+  }
+}
+
+@keyframes foot-in {
+  from {
+    transform: translate3d(30%, 0, 0);
+  }
+
+  to {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  html.touch .mq-track,
+  html.touch .section[data-bg="dark"]::before,
+  html.touch #footSign,
+  html.touch .hero-grid,
+  html.touch .hero-name .line,
+  html.touch .hero-bg .tr {
+    animation: none !important;
   }
 }
