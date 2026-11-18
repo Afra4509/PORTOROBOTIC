@@ -81,11 +81,13 @@
     const m = IMGS[p];
     if (!m || !m[2].length) return `src="${esc(asset(p))}"${m ? ` width="${m[0]}" height="${m[1]}"` : ''}`;
     const set = m[2].map(([w, f]) => `${esc(asset(f))} ${w}w`).join(', ');
-    return `src="${esc(asset(midVariant(m[2])))}" srcset="${set}" sizes="${sizes}" width="${m[0]}" height="${m[1]}"`;
+    return `src="${esc(asset(midVariant(m[2])))}" srcset="${set}" sizes="${sizes}" width="${m[0]}" height="${m[1]}" data-orig="${esc(asset(p))}"`;
   }
 
   function setImg(img, p, sizes) {
     const m = IMGS[p];
+    delete img.dataset.fell;
+    img.dataset.orig = asset(p);
     if (m && m[2].length) {
       img.sizes = sizes;
       img.srcset = m[2].map(([w, f]) => `${asset(f)} ${w}w`).join(', ');
@@ -94,6 +96,15 @@
       img.removeAttribute('srcset');
       img.src = asset(p);
     }
+  }
+
+  function imgFallback(e) {
+    const img = e.target;
+    if (!img || img.tagName !== 'IMG' || !img.dataset.orig || img.dataset.fell) return;
+    if (img.currentSrc && decodeURI(img.currentSrc).endsWith(decodeURI(img.dataset.orig))) return;
+    img.dataset.fell = '1';
+    img.removeAttribute('srcset');
+    img.src = img.dataset.orig;
   }
 
   function mediaHTML({ src, alt, fit, tag = 'div', attrs = '', cls = '', sizes = '100vw', priority = false }) {
@@ -1372,16 +1383,7 @@
 
   function runLoader(onReady) {
     const loader = $('#loader');
-    let finished = false, loaded = document.readyState === 'complete';
-    window.addEventListener('load', () => { loaded = true; });
-    const heroImg = $('#heroFigure img');
-    const heroReady = new Promise((res) => {
-      if (!heroImg || (heroImg.complete && heroImg.naturalWidth)) { res(); return; }
-      heroImg.addEventListener('load', res, { once: true });
-      heroImg.addEventListener('error', res, { once: true });
-    });
-    const fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready.catch(() => { }) : Promise.resolve();
-    Promise.all([heroReady, fontsReady]).then(() => { loaded = true; });
+    let finished = false;
 
     function ready() {
       document.documentElement.classList.remove('is-loading');
@@ -1395,7 +1397,8 @@
       if (finished) return;
       finished = true;
       if (loader) {
-        $('#loaderNum').textContent = '100';
+        const numEl = $('#loaderNum');
+        if (numEl) numEl.textContent = '100';
         loader.classList.add('done');
         setTimeout(() => loader.remove(), 1300);
       }
@@ -1407,121 +1410,128 @@
     let quick = false;
     try { quick = sessionStorage.getItem('afd-visited') === '1'; sessionStorage.setItem('afd-visited', '1'); } catch (e) { }
 
-    const map = $('#ldMap'), route = $('#ldRoute'), trail = $('#ldDone'), padsG = $('#ldPads');
-    const drone = $('#drone'), shadow = $('#ldShadow'), payload = $('#payload');
-    const num = $('#loaderNum'), stageEl = $('#ldStage');
+    // Elemen HUD
+    const numEl = $('#loaderNum');
+    const stageEl = $('#ldStage');
     const tAlt = $('#tAlt'), tSpd = $('#tSpd'), tHdg = $('#tHdg'), tWp = $('#tWp');
+    const drone = $('#drone'), shadow = $('#ldShadow'), payload = $('#payload');
+
     const STAGES = [[0, 'Memeriksa baterai'], [0.16, 'Kalibrasi IMU'], [0.34, 'Mengunci GPS'], [0.52, 'Mengantar paket PCB'], [0.78, 'Menuju titik akhir'], [0.995, 'Paket terkirim']];
-
-    let W = 0, H = 0, L = 1, fracs = [], padEls = [];
-    function layout() {
-      W = innerWidth; H = innerHeight;
-      const portrait = W < H;
-      const WP = portrait
-        ? [[0.16, 0.66], [0.5, 0.56], [0.82, 0.5], [0.5, 0.4], [0.2, 0.34], [0.72, 0.24]]
-        : [[0.1, 0.68], [0.27, 0.46], [0.43, 0.62], [0.6, 0.38], [0.76, 0.56], [0.9, 0.3]];
-      const pts = WP.map(([x, y]) => [x * W, y * H]);
-      const { d, segs } = catmullRom(pts);
-      map.setAttribute('viewBox', `0 0 ${W} ${H}`);
-      route.setAttribute('d', d);
-      trail.setAttribute('d', d);
-      L = route.getTotalLength() || 1;
-      trail.style.strokeDasharray = `${L} ${L}`;
-      const tmp = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      map.appendChild(tmp);
-      let acc = `M${pts[0][0]} ${pts[0][1]}`;
-      fracs = [0];
-      segs.forEach((s) => { acc += s; tmp.setAttribute('d', acc); fracs.push(tmp.getTotalLength() / L); });
-      tmp.remove();
-      padsG.innerHTML = pts.map((p, i) =>
-        `<g class="pad" transform="translate(${p[0].toFixed(1)} ${p[1].toFixed(1)})"><circle class="ring" r="9"/><rect x="-7" y="-7" width="14" height="14" rx="2"/><circle r="2.4"/><text x="13" y="-12">TP${i + 1}</text></g>`
-      ).join('');
-      padEls = $$('.pad', padsG);
-    }
-    // Safety: jika layout atau SVG gagal, langsung done()
-    try { layout(); } catch(e) { setTimeout(done, 0); return; }
-    window.addEventListener('resize', () => { try { layout(); } catch(e) {} });
-
-    // Pastikan SVG sudah dirender (layout sudah dihitung) sebelum memulai animasi
-    setTimeout(done, 9000); // hard safety net - maksimal 9 detik
-    const dur = quick ? 1200 : 2600, exitDur = 700;
-    let last = 0, exitAt = 0, stageI = -1;
-    let x = 0, y = 0, vx = 0, vy = 0, tilt = 0, th = 0, thv = 0, pvx = 0;
-
-    // Delay 1 rAF agar browser selesai layout SVG sebelum kita query getTotalLength/getPointAtLength
-    requestAnimationFrame(() => {
-    try {
-      // Re-layout di dalam rAF agar dimensi SVG sudah benar
-      layout();
-      const start = route.getPointAtLength(0);
-      x = isFinite(start.x) ? start.x : innerWidth * 0.1;
-      y = isFinite(start.y) ? start.y + 40 : innerHeight * 0.65;
-    } catch(e) { setTimeout(done, 0); return; }
+    const dur = quick ? 1200 : 2600;
     const t0 = performance.now();
-    last = t0;
+    let last = t0, stageI = -1;
 
-    (function step(now) {
+    // Posisi drone: gerak dari kiri bawah ke kanan atas secara sinusoidal
+    const startX = innerWidth * 0.1, startY = innerHeight * 0.7;
+    const endX = innerWidth * 0.85, endY = innerHeight * 0.25;
+    let droneX = startX, droneY = startY;
+    let vx = 0, vy = 0, tilt = 0, th = 0, thv = 0, pvx = 0;
+
+    // Aktifkan drone
+    if (drone) drone.style.opacity = '1';
+
+    // Coba gambar SVG route jika tersedia (optional - tidak crash jika gagal)
+    try {
+      const map = $('#ldMap'), route = $('#ldRoute'), trail = $('#ldDone'), padsG = $('#ldPads');
+      if (map && route && trail && padsG) {
+        const W = innerWidth, H = innerHeight;
+        const portrait = W < H;
+        const WP = portrait
+          ? [[0.16,0.66],[0.5,0.56],[0.82,0.5],[0.5,0.4],[0.2,0.34],[0.72,0.24]]
+          : [[0.1,0.68],[0.27,0.46],[0.43,0.62],[0.6,0.38],[0.76,0.56],[0.9,0.3]];
+        const pts = WP.map(([x,y]) => [x*W, y*H]);
+        map.setAttribute('viewBox', `0 0 ${W} ${H}`);
+        let d = `M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+        for (let i = 0; i < pts.length - 1; i++) {
+          const p0=pts[i-1]||pts[i], p1=pts[i], p2=pts[i+1], p3=pts[i+2]||p2;
+          const c1=[p1[0]+(p2[0]-p0[0])/6, p1[1]+(p2[1]-p0[1])/6];
+          const c2=[p2[0]-(p3[0]-p1[0])/6, p2[1]-(p3[1]-p1[1])/6];
+          d += ` C${c1[0].toFixed(1)} ${c1[1].toFixed(1)} ${c2[0].toFixed(1)} ${c2[1].toFixed(1)} ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;
+        }
+        route.setAttribute('d', d);
+        trail.setAttribute('d', d);
+        const L = route.getTotalLength();
+        if (L > 0) {
+          trail.style.strokeDasharray = `${L} ${L}`;
+          trail.style.strokeDashoffset = `${L}`;
+          padsG.innerHTML = pts.map((p,i) =>
+            `<g class="pad" transform="translate(${p[0].toFixed(1)} ${p[1].toFixed(1)})"><circle class="ring" r="9"/><rect x="-7" y="-7" width="14" height="14" rx="2"/><circle r="2.4"/><text x="13" y="-12">TP${i+1}</text></g>`
+          ).join('');
+        }
+      }
+    } catch(_) {}
+
+    function step(now) {
       if (finished) return;
       const dt = clamp((now - last) / 16.667, 0.25, 3); last = now;
       const t = clamp((now - t0) / dur, 0, 1);
-      let e = easeIO(t);
-      if (!loaded) e = Math.min(e, 0.92);
+      const e = easeIO(t);
 
-      let tx, ty;
-      if (e >= 1 && !exitAt) exitAt = now;
-      if (exitAt) {
-        const o = clamp((now - exitAt) / exitDur, 0, 1);
-        const endP = route.getPointAtLength(L);
-        tx = lerp(endP.x, W * 1.25, o * o);
-        ty = lerp(endP.y, -H * 0.35, o * o);
-        if (o >= 1) { done(); return; }
-      } else {
-        const p = route.getPointAtLength(e * L);
-        tx = p.x; ty = p.y + Math.sin(now / 240) * 3.5;
+      // Update counter %
+      if (numEl) numEl.textContent = Math.round(e * 100);
+
+      // Stage text
+      let si = 0;
+      STAGES.forEach(([at], i) => { if (e >= at) si = i; });
+      if (si !== stageI && stageEl) {
+        stageI = si;
+        stageEl.classList.add('swap');
+        setTimeout(() => { if(stageEl){stageEl.textContent = STAGES[si][1]; stageEl.classList.remove('swap');} }, 160);
       }
 
-      const kS = exitAt ? 0.14 : 0.075, cS = 0.36;
-      vx += ((tx - x) * kS - vx * cS) * dt;
-      vy += ((ty - y) * kS - vy * cS) * dt;
-      x += vx * dt; y += vy * dt;
-
+      // Drone physics - gerak sepanjang path virtual
+      const tx = lerp(startX, endX, e) + Math.sin(now / 220) * 18;
+      const ty = lerp(startY, endY, e) + Math.sin(now / 170) * 10;
+      const kS = 0.08, cS = 0.34;
+      vx += ((tx - droneX) * kS - vx * cS) * dt;
+      vy += ((ty - droneY) * kS - vy * cS) * dt;
+      droneX += vx * dt; droneY += vy * dt;
       const ax = (vx - pvx) / dt; pvx = vx;
       tilt += (clamp(vx * 1.7, -24, 24) - tilt) * (1 - Math.pow(0.82, dt));
-
       thv += (-0.05 * th - 0.07 * thv - ax * 2.4) * dt;
       th = clamp(th + thv * dt, -42, 42);
 
-      drone.style.opacity = 1;
-      drone.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0) translate(-50%,-50%) rotate(${tilt.toFixed(2)}deg)`;
-      payload.setAttribute('transform', `rotate(${(th - tilt).toFixed(2)} 120 74)`);
-
-      const ground = H * 0.86, alt = clamp((ground - y) / H, 0, 1);
-      shadow.style.opacity = (0.55 - alt * 0.45).toFixed(3);
-      shadow.style.transform = `translate3d(${(x - 60).toFixed(1)}px,${ground.toFixed(1)}px,0) scale(${(1 - alt * 0.6).toFixed(3)},1)`;
-
-      trail.style.strokeDashoffset = (L * (1 - e)).toFixed(1);
-      let passed = 0;
-      padEls.forEach((el, i) => { const hit = e >= fracs[i] - 0.004; el.classList.toggle('on', hit); if (hit) passed++; });
-
-      num.textContent = Math.round(e * 100);
-      tAlt.textContent = (alt * 120).toFixed(1).padStart(5, '0');
-      tSpd.textContent = Math.min(99.9, Math.hypot(vx, vy) * 0.9).toFixed(1).padStart(4, '0');
-      tHdg.textContent = `${pad(Math.round(((Math.atan2(vy, vx) * 180 / Math.PI) + 450) % 360), 3)}°`;
-      tWp.textContent = `${passed}/${padEls.length}`;
-
-      let si = 0;
-      STAGES.forEach(([at], i) => { if (e >= at) si = i; });
-      if (si !== stageI) {
-        stageI = si;
-        stageEl.classList.add('swap');
-        setTimeout(() => { stageEl.textContent = STAGES[si][1]; stageEl.classList.remove('swap'); }, 160);
+      if (drone) {
+        drone.style.transform = `translate3d(${droneX.toFixed(1)}px,${droneY.toFixed(1)}px,0) translate(-50%,-50%) rotate(${tilt.toFixed(2)}deg)`;
+      }
+      if (payload) payload.setAttribute('transform', `rotate(${(th - tilt).toFixed(2)} 120 74)`);
+      if (shadow) {
+        const ground = innerHeight * 0.86, alt = clamp((ground - droneY) / innerHeight, 0, 1);
+        shadow.style.opacity = (0.55 - alt * 0.45).toFixed(3);
+        shadow.style.transform = `translate3d(${(droneX - 60).toFixed(1)}px,${ground.toFixed(1)}px,0) scale(${(1 - alt * 0.6).toFixed(3)},1)`;
       }
 
-        requestAnimationFrame(step);
-    })(t0);
-    }); // end requestAnimationFrame wrapper
-  }
+      // HUD
+      const alt2 = clamp((innerHeight * 0.86 - droneY) / innerHeight, 0, 1);
+      if (tAlt) tAlt.textContent = (alt2 * 120).toFixed(1).padStart(5, '0');
+      if (tSpd) tSpd.textContent = Math.min(99.9, Math.hypot(vx, vy) * 0.9).toFixed(1).padStart(4, '0');
+      if (tHdg) tHdg.textContent = `${pad(Math.round(((Math.atan2(vy, vx) * 180 / Math.PI) + 450) % 360), 3)}°`;
+      if (tWp)  tWp.textContent  = `${Math.min(6, Math.floor(e * 7))}/6`;
 
+      // Update trail jika SVG tersedia
+      try {
+        const trail = $('#ldDone'), route = $('#ldRoute');
+        if (trail && route) {
+          const L = route.getTotalLength();
+          if (L > 0) {
+            trail.style.strokeDashoffset = (L * (1 - e)).toFixed(1);
+            const pads = $$('.pad', document);
+            const fracs = pads.map((_, i) => i / Math.max(1, pads.length - 1));
+            pads.forEach((el, i) => el.classList.toggle('on', e >= fracs[i] - 0.004));
+          }
+        }
+      } catch(_) {}
+
+      if (t >= 1) {
+        // Animasi selesai - exit drone keluar layar lalu done()
+        done();
+        return;
+      }
+      requestAnimationFrame(step);
+    }
+
+    requestAnimationFrame(step);
+  }
   function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 
   function fitType() {
@@ -1551,6 +1561,7 @@
   }
 
   function init() {
+    document.addEventListener('error', imgFallback, true);
     if (window.history && 'scrollRestoration' in window.history) window.history.scrollRestoration = 'manual';
     window.scrollTo(0, 0);
     document.documentElement.classList.toggle('touch', touchMode);
