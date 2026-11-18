@@ -12,10 +12,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet" />
 
-  <link rel="stylesheet" href="css/style.css?v=28" />
+  <link rel="stylesheet" href="css/style.css?v=37" />
 
   <noscript>
     <style>
@@ -28,19 +28,23 @@
         overflow: auto !important;
       }
 
-      .line-in,
-      .wi,
-      .media-in {
-        transform: none !important;
-      }
-
       .media {
         clip-path: none !important;
       }
 
+      .media-in,
+      .c,
+      .ch,
+      .mi-in {
+        transform: none !important;
+        opacity: 1 !important;
+      }
+
       .rise,
       .row,
-      .hero .rise {
+      .part-in,
+      .sec-meta,
+      .stat {
         opacity: 1 !important;
         transform: none !important;
       }
@@ -55,15 +59,115 @@
 <body data-bg="light" class="is-loading">
 
   <div id="loader" aria-hidden="true">
-    <span class="loader-name">Afra Fadhma Dinata</span>
-    <span class="loader-num"><span id="loaderNum">0</span></span>
+    <div class="ld-grid"></div>
+
+    <svg class="ld-map" id="ldMap">
+      <path class="ld-route" id="ldRoute" />
+      <path class="ld-done" id="ldDone" />
+      <g id="ldPads"></g>
+    </svg>
+
+    <div class="ld-shadow" id="ldShadow"></div>
+
+    <div class="drone" id="drone">
+      <svg viewBox="0 0 240 150" fill="none">
+        <g stroke="#EAF0E9" stroke-opacity=".45" stroke-width="3" stroke-linecap="round">
+          <path d="M112 54L74 36M128 54L166 36" />
+        </g>
+        <g opacity=".5">
+          <g transform="translate(74 30)">
+            <rect x="-3.5" y="0" width="7" height="8" rx="1.5" fill="#EAF0E9" />
+            <ellipse class="blur" rx="30" ry="3.4" cy="-1" fill="#EAF0E9" />
+            <ellipse class="blade" rx="28" ry="2.2" cy="-1" fill="#EAF0E9" />
+          </g>
+          <g transform="translate(166 30)">
+            <rect x="-3.5" y="0" width="7" height="8" rx="1.5" fill="#EAF0E9" />
+            <ellipse class="blur" rx="30" ry="3.4" cy="-1" fill="#EAF0E9" />
+            <ellipse class="blade b2" rx="28" ry="2.2" cy="-1" fill="#EAF0E9" />
+          </g>
+        </g>
+
+        <g id="payload">
+          <path d="M120 74V104" stroke="#EAF0E9" stroke-width="1.5" />
+          <path d="M120 104L104 112M120 104L136 112" stroke="#EAF0E9" stroke-width="1.2" />
+          <rect x="98" y="111" width="44" height="22" rx="2" fill="#1B5C45" stroke="#EAF0E9" stroke-width="1.5" />
+          <rect x="112" y="116" width="16" height="12" rx="1" fill="#0C2A21" />
+          <circle cx="104" cy="117" r="1.8" fill="#D4AF5A" />
+          <circle cx="104" cy="127" r="1.8" fill="#D4AF5A" />
+          <circle cx="136" cy="117" r="1.8" fill="#D4AF5A" />
+          <circle cx="136" cy="127" r="1.8" fill="#D4AF5A" />
+          <path d="M112 119h-4M112 122h-4M112 125h-4M128 119h4M128 122h4M128 125h4" stroke="#D4AF5A" stroke-width="1" />
+        </g>
+
+        <g stroke="#EAF0E9" stroke-width="3.5" stroke-linecap="round">
+          <path d="M104 58L48 44M136 58L192 44" />
+          <path d="M106 70L98 86M134 70L142 86M88 86h20M132 86h20" stroke-width="3" />
+        </g>
+        <g transform="translate(48 38)">
+          <rect x="-5" y="0" width="10" height="11" rx="2" fill="#EAF0E9" />
+          <ellipse class="blur" rx="32" ry="3.6" cy="-1" fill="#EAF0E9" />
+          <ellipse class="blade" rx="30" ry="2.4" cy="-1" fill="#EAF0E9" />
+          <circle class="led" cy="8" r="2" fill="#D4AF5A" />
+        </g>
+        <g transform="translate(192 38)">
+          <rect x="-5" y="0" width="10" height="11" rx="2" fill="#EAF0E9" />
+          <ellipse class="blur" rx="32" ry="3.6" cy="-1" fill="#EAF0E9" />
+          <ellipse class="blade b2" rx="30" ry="2.4" cy="-1" fill="#EAF0E9" />
+          <circle class="led l2" cy="8" r="2" fill="#D4AF5A" />
+        </g>
+
+        <rect x="96" y="50" width="48" height="24" rx="9" fill="#EAF0E9" />
+        <rect x="106" y="44" width="28" height="9" rx="4" fill="#EAF0E9" />
+        <rect x="104" y="57" width="32" height="4" rx="2" fill="#123629" />
+        <circle cx="140" cy="66" r="2.6" fill="#123629" />
+      </svg>
+    </div>
+
+    <div class="ld-top">
+      <div class="ld-tag">
+        <span class="ld-id">AFD/01</span>
+        <span class="ld-stage" id="ldStage">Memeriksa baterai</span>
+      </div>
+      <dl class="ld-tele">
+        <div>
+          <dt>ALT</dt>
+          <dd id="tAlt">000.0</dd>
+        </div>
+        <div>
+          <dt>SPD</dt>
+          <dd id="tSpd">00.0</dd>
+        </div>
+        <div>
+          <dt>HDG</dt>
+          <dd id="tHdg">000°</dd>
+        </div>
+        <div>
+          <dt>WP</dt>
+          <dd id="tWp">0/6</dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="ld-foot">
+      <div class="ld-name">
+        <span>Afra Fadhma Dinata</span>
+        <span class="ld-sub">Hardware, firmware, PCB</span>
+      </div>
+      <span class="loader-num"><span id="loaderNum">0</span><i>%</i></span>
+    </div>
   </div>
 
   <div class="progress" id="progress" aria-hidden="true"></div>
 
   <header class="header" id="header">
-    <a href="#beranda" class="brand" data-nav>Afra Fadhma Dinata</a>
-    <span class="hd-label" id="hdLabel" aria-hidden="true">Beranda</span>
+    <a href="#beranda" class="brand" data-nav>
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span>Afra Fadhma Dinata</span>
+    </a>
+    <span class="hd-label" aria-hidden="true">
+      <span class="hd-no" id="hdNo">01</span>
+      <span class="hd-text" id="hdLabel">Beranda</span>
+    </span>
     <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="menu">
       <span class="menu-btn-text" id="menuBtnText">Menu</span>
       <span class="menu-btn-icon" aria-hidden="true"><i></i><i></i></span>
@@ -82,8 +186,8 @@
 
   <main id="main">
 
-    <!-- Beranda -->
     <section id="beranda" class="hero" data-bg="light" data-label="Beranda">
+      <div class="hero-bg" id="heroBg" aria-hidden="true"></div>
       <div class="container hero-grid">
         <h1 class="hero-name" id="heroName"></h1>
         <div class="hero-figure" id="heroFigure"></div>
@@ -97,13 +201,16 @@
       </div>
     </section>
 
-    <!-- Tentang -->
+    <div class="marquee" id="marquee" aria-hidden="true"></div>
+
     <section id="tentang" class="section" data-bg="light" data-label="Tentang">
       <div class="container">
         <div class="section-head">
           <h2 class="h2" data-split>Tentang</h2>
         </div>
         <p class="statement" id="statement"></p>
+
+        <dl class="stats" id="stats"></dl>
 
         <div class="about-grid">
           <div class="about-text">
@@ -120,7 +227,6 @@
       </div>
     </section>
 
-    <!-- Pengalaman -->
     <section id="pengalaman" class="section" data-bg="light" data-label="Pengalaman">
       <div class="container">
         <div class="section-head">
@@ -130,40 +236,41 @@
       </div>
     </section>
 
-    <!-- Proyek -->
     <section id="proyek" class="section" data-bg="dark" data-label="Proyek">
       <div class="container">
         <div class="section-head">
           <h2 class="h2" data-split>Proyek</h2>
         </div>
-        <div id="featured"></div>
+        <div id="featured" class="featured"></div>
 
         <div class="subsection index-wrap">
           <div class="index-head">
             <h3 class="h3" data-split>Semua proyek</h3>
             <div class="tabs rise" id="tabs" role="group" aria-label="Filter proyek"></div>
           </div>
-
-          <!-- Hint hover preview -->
-          <div class="index-hint" aria-hidden="true">
-            <span class="index-hint-icon">
-              <svg width="18" height="22" viewBox="0 0 18 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M5.5 1C5.5 1 5.5 10 5.5 13C5.5 13 8 11 10.5 13L12.5 17.5L14 16.5L12 12C12 12 15.5 12 15.5 9V3.5C15.5 2.1 14.4 1 13 1H5.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none"/>
-                <line x1="5.5" y1="5" x2="2" y2="5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-                <line x1="5.5" y1="8" x2="2" y2="8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-                <line x1="5.5" y1="11" x2="2" y2="11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          <div class="index-hint rise" id="indexHint" role="note">
+            <span class="hint-demo" aria-hidden="true">
+              <i class="hd-row"></i><i class="hd-row"></i><i class="hd-row"></i>
+              <i class="hd-card"></i>
+              <i class="hd-ring"></i>
+              <svg class="hd-cursor" viewBox="0 0 16 16">
+                <path d="M2 1.5l11.5 6.2-5 1.4-2.3 4.8z" />
               </svg>
-              <span class="index-hint-cursor"></span>
             </span>
-            <span class="index-hint-text">Arahkan kursor ke proyek untuk pratinjau gambar</span>
+            <span class="hint-text">
+              <span class="hint-title"><span class="hint-tag">Tip</span><span class="hint-title-text">Arahkan kursor ke
+                  proyek untuk melihat gambar</span></span>
+              <span class="hint-sub">Pratinjau muncul mengikuti kursor. Klik proyek untuk membuka detail
+                lengkapnya.</span>
+            </span>
+            <span class="hint-keys"
+              aria-hidden="true"><kbd>Klik</kbd><span>Detail</span><kbd>Esc</kbd><span>Tutup</span></span>
           </div>
-
-          <ul class="rows index-rows" id="indexList"></ul>
+          <ul class="rows index-rows" id="indexList" data-cursor-hide></ul>
         </div>
       </div>
     </section>
 
-    <!-- Keahlian -->
     <section id="keahlian" class="section" data-bg="light" data-label="Keahlian">
       <div class="container">
         <div class="section-head">
@@ -173,7 +280,6 @@
       </div>
     </section>
 
-    <!-- Sertifikat -->
     <section id="sertifikat" class="section" data-bg="light" data-label="Sertifikat">
       <div class="container">
         <div class="section-head">
@@ -183,8 +289,7 @@
       </div>
     </section>
 
-    <!-- Situs lain -->
-    <section id="situs" class="section" data-bg="light" data-label="aefera.me">
+    <section id="situs" class="section" data-bg="light" data-label="Situs lain">
       <div class="container">
         <div class="section-head">
           <h2 class="h2" data-split>Situs lain</h2>
@@ -193,55 +298,60 @@
       </div>
     </section>
 
-    <!-- Kontak -->
     <section id="kontak" class="section contact" data-bg="dark" data-label="Kontak">
       <div class="container">
-        <div class="contact-header-wrap">
+        <div class="contact-top">
           <div class="contact-head-left">
             <div class="section-head">
               <h2 class="h2" data-split>Kontak</h2>
             </div>
-            <p class="contact-lead rise">Untuk kolaborasi, kerja sama hardware/firmware, atau pertanyaan seputar proyek, silakan hubungi kontak di bawah.</p>
+            <p class="contact-lead rise">Untuk kolaborasi, kerja sama hardware/firmware, atau pertanyaan seputar proyek,
+              silakan hubungi kontak di bawah.</p>
           </div>
-          <div class="contact-video-card rise" style="--d:.15s">
-            <video src="video/video.mp4" autoplay loop muted playsinline disablePictureInPicture preload="auto"></video>
-            <div class="contact-video-overlay" aria-hidden="true"></div>
-          </div>
+          <figure class="contact-video rise" style="--d:.15s">
+            <div class="contact-video-frame">
+              <video src="video/video.mp4" autoplay loop muted playsinline disablePictureInPicture
+                preload="auto"></video>
+            </div>
+            <figcaption><span>REC</span><span>Surabaya</span></figcaption>
+          </figure>
         </div>
 
         <ul class="rows contact-rows" id="contactList"></ul>
+
         <div class="site-foot">
           <span id="footCopy"></span>
-          <a href="#beranda" class="link" data-nav>Kembali ke atas</a>
+          <a href="#beranda" class="link" data-nav>Kembali ke atas ↑</a>
         </div>
       </div>
     </section>
 
   </main>
 
-  <!-- Pratinjau saat hover di daftar proyek -->
-  <div class="peek" id="peek" aria-hidden="true"><img alt="" /></div>
+  <div class="peek" id="peek" aria-hidden="true">
+    <div class="peek-in"><img alt="" /></div>
+    <span class="peek-tag" id="peekTag"></span>
+  </div>
 
-  <!-- Viewer detail proyek dan sertifikat -->
   <div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="viewerTitle"
     inert>
     <div class="viewer-backdrop" data-close></div>
     <div class="viewer-panel">
       <div class="viewer-media"><img id="viewerImg" alt="" /></div>
       <div class="viewer-side">
-        <button class="viewer-close" id="viewerClose" type="button">Tutup</button>
+        <button class="viewer-close" id="viewerClose" type="button">Tutup <span aria-hidden="true">✕</span></button>
         <div class="viewer-info" id="viewerInfo"></div>
         <div class="viewer-nav">
-          <button type="button" id="viewerPrev">Sebelumnya</button>
+          <button type="button" id="viewerPrev">← Sebelumnya</button>
           <span id="viewerCount"></span>
-          <button type="button" id="viewerNext">Berikutnya</button>
+          <button type="button" id="viewerNext">Berikutnya →</button>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="js/data.js?v=28"></script>
-  <script src="js/main.js?v=28"></script>
+  <script src="js/data.js?v=37"></script>
+  <script src="js/main.js?v=37"></script>
 </body>
 
 </html>

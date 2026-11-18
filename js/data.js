@@ -1,10 +1,3 @@
-/* ==========================================================================
-   DATA PORTOFOLIO
-   Semua teks dan path gambar ada di file ini. Path gambar tidak diubah dari
-   versi sebelumnya. Untuk proyek yang gambarnya terpotong di bingkai, tambahkan
-   fit: "contain" pada proyek tersebut.
-   ========================================================================== */
-
 const portfolioData = {
 
   profile: {
@@ -115,7 +108,6 @@ const portfolioData = {
     }
   ],
 
-  /* kind: "pcb" atau "iot". featured: tampil sebagai sorotan besar. */
   projects: [
     {
       id: "pcb-01", kind: "pcb", featured: true, area: "PCB",
