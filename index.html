@@ -15,7 +15,7 @@
     href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet" />
 
-  <link rel="stylesheet" href="css/style.css?v=41" />
+  <link rel="stylesheet" href="css/style.css?v=45" />
 
   <noscript>
     <style>
@@ -161,7 +161,25 @@
 
   <header class="header" id="header">
     <a href="#beranda" class="brand" data-nav>
-      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-mark" aria-hidden="true">
+        <svg class="bm-svg" viewBox="0 0 32 32" fill="none">
+          <g class="bm-rig">
+            <g class="bm-ant">
+              <path class="bm-l" d="M16 8V4" />
+              <circle class="bm-led" cx="16" cy="3.2" r="2" />
+            </g>
+            <rect class="bm-ear" x="3.2" y="14" width="3" height="7" rx="1.2" />
+            <rect class="bm-ear" x="25.8" y="14" width="3" height="7" rx="1.2" />
+            <rect class="bm-head" x="5.8" y="8" width="20.4" height="19" rx="6" />
+            <rect class="bm-screen" x="9" y="11.2" width="14" height="11.6" rx="3.4" />
+            <g class="bm-eyes">
+              <rect class="bm-eye" x="11.6" y="14.4" width="2.6" height="4" rx="1.3" />
+              <rect class="bm-eye" x="17.8" y="14.4" width="2.6" height="4" rx="1.3" />
+              <path class="bm-happy" d="M11.4 17.4q1.5-2.2 3 0M17.6 17.4q1.5-2.2 3 0" />
+            </g>
+          </g>
+        </svg>
+      </span>
       <span>Afra Fadhma Dinata</span>
     </a>
     <span class="hd-label" aria-hidden="true">
@@ -310,8 +328,10 @@
           </div>
           <figure class="contact-video rise" style="--d:.15s">
             <div class="contact-video-frame">
-              <video src="video/video.mp4" autoplay loop muted playsinline disablePictureInPicture
-                preload="auto"></video>
+              <video poster="video/video-poster.webp" loop muted playsinline disablePictureInPicture preload="none">
+                <source src="video/video-web.mp4" type="video/mp4" />
+                <source src="video/video.mp4" type="video/mp4" />
+              </video>
             </div>
             <figcaption><span>REC</span><span>Surabaya</span></figcaption>
           </figure>
@@ -350,9 +370,22 @@
     </div>
   </div>
 
-  <script src="js/images.js?v=41"></script>
-  <script src="js/data.js?v=41"></script>
-  <script src="js/main.js?v=41"></script>
+  <script>
+    setTimeout(function () {
+      var b = document.body;
+      if (!b || b.classList.contains('is-ready')) return;
+      var l = document.getElementById('loader');
+      if (l) l.remove();
+      document.documentElement.classList.remove('is-loading');
+      b.classList.remove('is-loading');
+      b.classList.add('is-ready');
+      var st = document.createElement('style');
+      st.textContent = 'html,body{overflow:auto!important}.media{clip-path:none!important}.media-in,.c,.ch,.mi-in,.rise,.row,.part-in,.sec-meta,.stat,.sw{transform:none!important;opacity:1!important}';
+      document.head.appendChild(st);
+    }, 10000);
+  </script>
+  <script src="js/data.js?v=45"></script>
+  <script src="js/main.js?v=45"></script>
 </body>
 
 </html>
